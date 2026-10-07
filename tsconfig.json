@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "vite/client"]
+  },
+  "include": ["vitest.config.ts", "demos", "handson"],
+  "exclude": ["**/node_modules", "**/dist"]
+}

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+# デモ(b)(c)のビルド成果物はコミットする（file:// で開くため）
+!demos/dist/
+# 同梱した reveal.js の dist もコミットする（CDNを使わないため）
+!slides/vendor/reveal/dist/
+*.tsbuildinfo
+__screenshots__/
+.vitest-attachments/
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md
