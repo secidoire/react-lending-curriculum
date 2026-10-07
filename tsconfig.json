@@ -3,6 +3,6 @@
   "compilerOptions": {
     "types": ["node", "vite/client"]
   },
-  "include": ["vitest.config.ts", "demos", "handson"],
+  "include": ["vitest.config.ts", "explainer", "handson"],
   "exclude": ["**/node_modules", "**/dist"]
 }

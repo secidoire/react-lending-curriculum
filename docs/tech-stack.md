@@ -1,5 +1,6 @@
 # 技術スタック（2026年10月）
 
+## 共通
 | パッケージ | 指定 |
 |---|---|
 | node | >=22.12（推奨24 LTS） |
@@ -9,19 +10,37 @@
 | zod | ^4.6 |
 | vitest / @vitest/browser-playwright / vitest-browser-react / playwright | ^5 / 最新 |
 | eslint / typescript-eslint / eslint-plugin-react-hooks | 最新 |
-| babel-plugin-react-compiler / @rolldown/plugin-babel | 第7回で追加（`reactCompilerPreset`） |
-| reveal.js | 6.0.2（vendorに同梱） |
 
-## 判断1：React Compilerは第7回までOFF
-Compiler由来のlintルールは初回から有効にします。 本体は第7回でONにして、DevToolsで差分を観察させます。第6回までは「レンダー中に計算する」だけを教え、useMemo/useCallbackは第7回でエスケープハッチとして紹介します。 
+## explainer のみ
+| パッケージ | 指定 |
+|---|---|
+| @mdx-js/rollup | 導入時の最新安定版で固定する |
+| @shikijs/rehype | 導入時の最新安定版で固定する |
+| @types/mdx | 導入時の最新安定版で固定する |
+
+## handson/part1 第7回で追加
+| パッケージ | 指定 |
+|---|---|
+| babel-plugin-react-compiler / @rolldown/plugin-babel | `reactCompilerPreset` を使う（react.devの手順に従う） |
+
+## 判断1：React Compiler
+- `handson/part1`：第1〜6回はOFF、第7回でONにしてDevToolsで差分を観察させる。第6回までは「レンダー中に計算する」だけを教え、useMemo/useCallbackは第7回でエスケープハッチとして紹介する。
+- `explainer`：常にOFF。デモで再レンダリングの回数や参照の変化を見せるため。
+- Compiler由来のlintルールは、どちらも初回から有効にする。
 
 ## 判断2：テスト
-ドメインはnode環境で、時刻を注入してテストします。コンポーネントはBrowser Modeで、`render`はasync、検証は`expect.element(...)`を使います。社内PCにPlaywrightを入れにくい場合は、jsdom + @testing-library/reactでもかまいません。
+- ドメインとデモのロジックはnode環境で、時刻を注入してテストする。
+- コンポーネントはBrowser Modeで、`render`はasync、検証は`expect.element(...)`を使う。
+- 社内PCにPlaywrightを入れにくい場合は、jsdom + @testing-library/reactでもかまわない。
 
 ## 判断3：React 19系の新API
 | API | 扱い |
 |---|---|
 | useActionState / `<form action>` | 第5回でイベントハンドラ版と比較する |
-| useEffectEvent | 0-4・第5回で紹介する |
+| useEffectEvent | 0-4・第5回で紹介する。デモ(c)のモードの1つ |
+| useSyncExternalStore | explainerの自作ルーターで使う。発展編で読む |
 | use / Suspenseによるデータ取得 | 範囲外（発展課題） |
 | ViewTransition・Fragment refs・Server Components | 範囲外 |
+
+## バージョンの固定
+- 第0回（土台づくり）で全パッケージのバージョンを確定し、lockfileをコミットする。教材の作成途中にメジャー更新を取り込まない。

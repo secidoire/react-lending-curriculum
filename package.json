@@ -6,7 +6,7 @@
     "node": ">=22.12"
   },
   "workspaces": [
-    "demos",
+    "explainer",
     "handson/part1/my-app",
     "handson/part1/shared-test-utils",
     "handson/part1/sessions/*/starter",

@@ -16,7 +16,7 @@ export default defineConfig({
         test: {
           name: 'node',
           environment: 'node',
-          include: ['handson/**/*.test.ts', 'demos/**/*.test.ts'],
+          include: ['handson/**/*.test.ts', 'explainer/**/*.test.ts'],
           exclude,
         },
       },
@@ -24,7 +24,7 @@ export default defineConfig({
         plugins: [react()],
         test: {
           name: 'browser',
-          include: ['handson/**/*.test.tsx', 'demos/**/*.test.tsx'],
+          include: ['handson/**/*.test.tsx', 'explainer/**/*.test.tsx'],
           exclude,
           browser: {
             enabled: true,

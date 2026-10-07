@@ -5,7 +5,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  globalIgnores(['**/node_modules/', '**/dist/', 'slides/vendor/']),
+  globalIgnores(['**/node_modules/', '**/dist/']),
 
   js.configs.recommended,
 
@@ -25,9 +25,9 @@ export default defineConfig([
     extends: [reactHooks.configs.flat.recommended],
   },
 
-  // ブラウザで動くコード（素のJS、ミニReact、Reactアプリ、デモ）
+  // ブラウザで動くコード（素のJS、ミニReact、Reactアプリ、解説ページ）
   {
-    files: ['handson/**', 'demos/**', 'slides/**'],
+    files: ['handson/**', 'explainer/**'],
     languageOptions: { globals: globals.browser },
   },
 
