@@ -30,7 +30,7 @@ react-lending-curriculum/
       │  ├─ key-reorder/   # (b)
       │  ├─ stale-closure/ # (c)
       │  └─ update-timeline/ # (d) 独立したrootで動かす
-      ├─ shared-mini-react/ # 0-3で作るミニReact（デモ(a)でも使う）
+      ├─ shared-mini-react/ # 0-3で作るミニReactの完成版（0-3の例とデモ(a)で使う）。途中の段階は examples/0-3/v1・v2 にある
       └─ styles/
 ```
 

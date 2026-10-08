@@ -25,6 +25,13 @@ export default defineConfig([
     extends: [reactHooks.configs.flat.recommended],
   },
 
+  // `/** @jsx h */` を付けたファイルでは、JSXが h() の呼び出しに変換される。
+  // ESLintはそれを知らないので、import した h を「使っていない」と数えないようにする。
+  {
+    files: ['explainer/src/examples/0-3/**/*.tsx'],
+    rules: { '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^h$' }] },
+  },
+
   // ブラウザで動くコード（解説ページと、その中で動かす例）
   {
     files: ['explainer/**'],

@@ -27,7 +27,7 @@ export function CodeEditor({ initialCode, label, onChange }: Props) {
       parent: container,
       extensions: [
         basicSetup,
-        javascript({ typescript: true }),
+        javascript({ typescript: true, jsx: true }),
         EditorView.contentAttributes.of({ 'aria-label': latest.current.label }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) latest.current.onChange(update.state.doc.toString());

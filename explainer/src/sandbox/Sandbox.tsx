@@ -66,7 +66,7 @@ export function Sandbox({ spec, codeClosed = false }: Props) {
             onChange={changeActiveFile}
           />
         )}
-        <SandboxPreview key={resetCount} files={files} entry={spec.entry} start={spec.start} />
+        <SandboxPreview key={resetCount} files={files} spec={spec} />
       </div>
     </figure>
   );

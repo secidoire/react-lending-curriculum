@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { startSandbox } from './runSandbox';
-import type { SandboxFile } from './types';
+import type { SandboxFile, SandboxSpec } from './types';
 
 type Props = {
+  /** 読者が書き換えた、いまのファイル */
   files: readonly SandboxFile[];
-  entry: string;
-  start: string;
+  spec: SandboxSpec;
 };
 
 // 入力が止まってから実行するまでの待ち時間。1文字打つたびに実行しないようにする。
 const RUN_DELAY_MS = 400;
 
-export function SandboxPreview({ files, entry, start }: Props) {
+export function SandboxPreview({ files, spec }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +23,7 @@ export function SandboxPreview({ files, entry, start }: Props) {
 
     const timer = setTimeout(() => {
       try {
-        startSandbox(files, entry, start, root);
+        startSandbox(spec, files, root);
         setError(null);
       } catch (caught) {
         root.replaceChildren();
@@ -31,7 +31,7 @@ export function SandboxPreview({ files, entry, start }: Props) {
       }
     }, RUN_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [files, entry, start]);
+  }, [files, spec]);
 
   return (
     <div className="sandbox-preview">

@@ -1,6 +1,6 @@
 import { transform } from 'sucrase';
 import { moduleName } from './moduleName';
-import type { SandboxFile } from './types';
+import type { SandboxFile, SandboxSpec } from './types';
 
 type Module = { exports: Record<string, unknown> };
 
@@ -8,7 +8,11 @@ type Module = { exports: Record<string, unknown> };
 // 1. TypeScript と import/export を、ブラウザがそのまま実行できる形に変換する（sucrase）
 // 2. import は require() の呼び出しに変わるので、その require を自前で用意して、同じ例の中のファイルを渡す
 // 戻り値は、entry のファイルが export しているもの。
-export function runSandbox(files: readonly SandboxFile[], entry: string): Record<string, unknown> {
+export function runSandbox(
+  files: readonly SandboxFile[],
+  entry: string,
+  jsxPragma = 'h',
+): Record<string, unknown> {
   const sources = new Map(files.map((file) => [moduleName(file.name), file.code]));
   const loaded = new Map<string, Module>();
 
@@ -24,7 +28,8 @@ export function runSandbox(files: readonly SandboxFile[], entry: string): Record
 
     const module: Module = { exports: {} };
     loaded.set(name, module);
-    const { code } = transform(source, { transforms: ['typescript', 'imports'] });
+    // JSXは、jsxPragma で指定した関数の呼び出しに変換される（<p>文</p> → h('p', null, '文')）。
+    const { code } = transform(source, { transforms: ['typescript', 'jsx', 'imports'], jsxPragma, production: true });
     // 書き換えられたコードを実行するために、文字列から関数を作る。読者が自分のブラウザで自分のコードを動かすだけなので許している。
     new Function('require', 'module', 'exports', code)(require, module, module.exports);
     return module.exports;
@@ -34,8 +39,9 @@ export function runSandbox(files: readonly SandboxFile[], entry: string): Record
 }
 
 // entry が export している start 関数を呼んで、root の中に例を組み立てる。
-export function startSandbox(files: readonly SandboxFile[], entry: string, start: string, root: HTMLElement): void {
-  const exported = runSandbox(files, entry)[start];
+export function startSandbox(spec: Omit<SandboxSpec, 'files'>, files: readonly SandboxFile[], root: HTMLElement): void {
+  const { entry, start } = spec;
+  const exported = runSandbox(files, entry, spec.jsxPragma)[start];
   if (typeof exported !== 'function') {
     throw new Error(`${entry} に、export function ${start}(root) がありません`);
   }

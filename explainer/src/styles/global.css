@@ -107,6 +107,7 @@ a {
 }
 
 .content article > .sandbox,
+.content article > .demo,
 .content article > .steps {
   max-width: none;
 }
@@ -117,6 +118,7 @@ a {
 }
 
 .layout.present .content article > .sandbox,
+.layout.present .content article > .demo,
 .layout.present .content article > .steps {
   max-width: none;
 }
@@ -518,4 +520,92 @@ pre.pane {
 
 .sandbox-root button {
   white-space: nowrap;
+}
+
+/* 視覚デモ(a)〜(d)。後ろの席からも読めるよう、文字は18px以上にする。 */
+.demo {
+  border-style: solid;
+  border-color: var(--text);
+  font-size: max(18px, 1em);
+}
+
+.demo button,
+.demo input {
+  padding: 0.2em 0.6em;
+  font: inherit;
+}
+
+.demo h3 {
+  margin: 0.5em 0;
+}
+
+.demo-panes,
+.key-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20em, 1fr));
+  gap: 1em;
+}
+
+.key-columns {
+  grid-template-columns: repeat(auto-fit, minmax(15em, 1fr));
+}
+
+.key-row input {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.demo-pane,
+.key-column {
+  min-width: 0;
+  padding: 0 0.75em 0.5em;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.demo-pane td {
+  white-space: nowrap;
+}
+
+.demo-status {
+  margin: 0.25em 0;
+  font-weight: bold;
+}
+
+.demo-note {
+  color: var(--muted);
+  font-size: 0.875em;
+}
+
+.key-column ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.key-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em 0.75em;
+  align-items: center;
+  padding: 0.4em 0;
+  border-top: 1px solid var(--line);
+}
+
+.key-row-name {
+  flex: 1 0 100%;
+  font-weight: bold;
+}
+
+.key-row-key {
+  color: var(--muted);
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.875em;
+}
+
+.key-row-misaligned {
+  padding: 0 0.5em;
+  border: 2px dashed var(--warning);
+  border-radius: 4px;
+  color: var(--warning);
 }

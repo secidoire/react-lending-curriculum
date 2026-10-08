@@ -12,4 +12,6 @@ export type SandboxSpec = {
   entry: string;
   /** entry が export している、例を組み立てる関数の名前。`(root: HTMLElement) => void` の形 */
   start: string;
+  /** JSX（.tsx のファイル）を、どの関数の呼び出しに変換するか（例：'h'） */
+  jsxPragma?: string;
 };

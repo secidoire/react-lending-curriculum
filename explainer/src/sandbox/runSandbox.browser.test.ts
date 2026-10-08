@@ -25,6 +25,17 @@ describe('runSandbox', () => {
 
     expect(() => runSandbox(files, 'main.ts')).toThrow('./missing');
   });
+
+  it('JSXを、指定した関数の呼び出しに変換する', () => {
+    const files = [
+      {
+        name: 'main.tsx',
+        code: "const h = (type: string, props: unknown, ...children: unknown[]) => ({ type, props, children });\nexport const node = <p className=\"a\">文</p>;",
+      },
+    ];
+
+    expect(runSandbox(files, 'main.tsx', 'h').node).toEqual({ type: 'p', props: { className: 'a' }, children: ['文'] });
+  });
 });
 
 describe('startSandbox', () => {
@@ -35,7 +46,7 @@ describe('startSandbox', () => {
       { name: 'main.ts', code: "export function start(root: HTMLElement) { root.append('動いた'); }" },
     ];
 
-    startSandbox(files, 'main.ts', 'start', root);
+    startSandbox({ entry: 'main.ts', start: 'start' }, files, root);
 
     expect(root.textContent).toBe('動いた');
   });
@@ -43,8 +54,8 @@ describe('startSandbox', () => {
   it('start 関数が無いと、わかる言葉で止まる', () => {
     const root = document.createElement('div');
 
-    expect(() => startSandbox([{ name: 'main.ts', code: 'export const x = 1;' }], 'main.ts', 'start', root)).toThrow(
-      'export function start(root)',
-    );
+    const files = [{ name: 'main.ts', code: 'export const x = 1;' }];
+
+    expect(() => startSandbox({ entry: 'main.ts', start: 'start' }, files, root)).toThrow('export function start(root)');
   });
 });

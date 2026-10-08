@@ -1,0 +1,509 @@
+import { FullVsDiff } from '../demos/full-vs-diff'
+import { KeyReorder } from '../demos/key-reorder'
+import {
+  diffByIndexSandbox,
+  firstTreeSandbox,
+  fullRedrawSandbox,
+  jsxSandbox,
+  keyedSandbox,
+} from '../examples/0-3/sandboxes'
+
+export const title = 'ミニReactを自作する'
+
+## 前回の予告を確かめよう
+
+前の回（0-2）のB版は、操作ではデータだけを直し、画面は `render()` で毎回すべて作り直していました。
+直し忘れは起きなくなりましたが、田中さんからこう言われました。「メモを書いている途中でほかの行を消したら、書きかけのメモが消えました。」
+
+<Question>
+B版で「プロジェクター」の行を削除する前と後の画面を、思い浮かべてください。
+DOMの中で、本当に変える必要があったのはどこでしょうか。変えなくてよかったのはどこでしょうか。
+</Question>
+
+<Reveal>
+
+変える必要があったのは、「プロジェクター」の行を取り除くことと、件数の文字を書き換えることだけです。ほかの行は、メモ欄も含めて、何も変える必要がありませんでした。
+
+必要なところだけを直せば、メモは消えません。けれども、それを操作ごとに手で書くと、0-2のA版に戻ってしまい、直し忘れが起きます。
+
+今日は、「データから画面を書くだけ」というB版の書き方のまま、DOMは必要なところだけを直す仕組みを、自分で作ります。
+
+</Reveal>
+
+## 画面を、DOMを作る前に「データ」で書けないか？
+
+必要なところとは、「1つ前に描いた画面」と「これから描く画面」で、違っているところです。それを知るには、2つを見比べたくなります。
+ところが、0-2のB版の `render()` は、いきなりDOMの要素を作っていました。作る前に見比べる材料が、手元にありません。
+
+そこで、DOMを作る前に、「こういう画面にしたい」という内容を、ただのオブジェクトで書くことにします。
+
+下の `firstTree.ts` を読んでください。`h()` は、今日これから作る小さなライブラリ（`miniReact.ts`）の関数です。
+引数は順に、要素の種類、属性、そのあとに子を好きな数だけ並べます。
+
+<Sandbox spec={firstTreeSandbox} />
+
+<Question>
+実行結果の下半分に出ているのは、`h()` が返したものの中身です。`type`・`props`・`children` は、それぞれ `h()` のどの引数から来ているでしょうか。
+次に、`root.append(createDom(tree));` の行を消すと、実行結果はどうなるでしょうか。予想してから、実際に消してみてください。
+</Question>
+
+<Reveal>
+
+`h()` は、1つ目の引数を `type`（要素の種類）、2つ目を `props`（属性）、3つ目以降を `children`（子）に入れた、ただのオブジェクトを返すだけです。
+子の中にまた `h()` があるので、全体は入れ子になった木の形になります。
+
+`createDom` の行を消すと、文は出なくなり、オブジェクトの中身だけが残ります。`h()` を呼んでも、画面は何も変わらないからです。
+画面に文を出していたのは、`createDom(tree)` でオブジェクトを本物のDOMに変え、`root.append()` で画面に入れる行でした。`createDom` は、`miniReact.ts` のタブにあります。
+
+```ts
+export function createDom(node: Child): Node {
+  if (typeof node === 'string') return document.createTextNode(node);
+
+  const dom = document.createElement(node.type);
+  for (const [key, value] of Object.entries(node.props)) setProp(dom, key, value);
+  for (const child of node.children) dom.append(createDom(child));
+  return dom;
+}
+```
+
+`Child` は「仮想ノードか、文字」という型です。文字ならテキストを作り、要素なら、属性を付けてから、子を1つずつ同じ関数でDOMにして中に入れています。
+`setProp` は、属性を1つDOMの要素に設定する関数です（同じタブにあります）。
+
+画面の要素を表すこのオブジェクトを<Term>仮想ノード</Term>、それが作る木を<Term>仮想DOM</Term>と呼びます。本物のDOMではなく、「こういうDOMがほしい」という注文書のようなものです。
+
+</Reveal>
+
+## 画面をデータから書くと、何が変わる？
+
+0-2のB版の貸出一覧を、`h()` で書き直しました。今日は、削除の代わりに「状態を切り替える」と「先頭に1件追加」で確かめます。
+0-2の `render()` がしていた仕事は、2つに分かれます。画面のオブジェクトを作る `view()`（`app.ts`）と、それをDOMにする `render`（`miniReact.ts`）です。
+
+`app.ts` の中の3つを見てください。
+
+- `view()`：いまのデータ（`loans`）から、画面全体を表すオブジェクトを作る関数。DOMには触りません。
+- `setLoans(next)`：データを新しいものに替えて、`render(view(), root)` で画面を描き直す関数。
+- `addToTop()` と `toggleStatus(id)`：操作の処理。新しいデータを作って `setLoans` に渡すだけです。
+
+<Sandbox spec={fullRedrawSandbox} />
+
+<Question>
+「リーダブルコード」のメモ欄に文字を入れてから、ほかの行の「状態を切り替える」を押してください。メモはどうなりましたか。
+0-2のB版と比べて、良くなったことと、まだ直っていないことは何でしょうか。
+</Question>
+
+<Reveal>
+
+メモは消えます。まだ直っていません。`miniReact.ts` の `render` が、0-2のB版と同じように、全部を捨てて作り直しているからです。
+
+```ts
+export function render(vnode: VNode, container: Element): void {
+  container.replaceChildren(createDom(vnode));
+}
+```
+
+良くなったことは2つあります。
+1つは、`app.ts` からDOMを直接操作するコードが消えたことです。アプリが書くのは、「データがこうなら、画面はこう」という `view()` だけになりました。
+もう1つは、画面がオブジェクトになったので、1つ前に描いた画面と、これから描く画面を、DOMを作る前に見比べられるようになったことです。
+
+</Reveal>
+
+## 入力している最中に、画面が作り直されたら？
+
+0-2では、メモが消えることだけを確かめました。ボタンを押すと、カーソル（フォーカス）はボタンに移ってしまうので、フォーカスがどうなるかは確かめられませんでした。
+実際のアプリでは、自分が何も押さなくても画面が変わります。ほかの人の操作が届いたり、時間が経ったりするからです。
+
+下のデモは、同じデータを2通りの方法で描いています。左は、いま見た「全部作り直す」方法です。右は、これから作る「違うところだけ直す」方法です。
+
+<FullVsDiff />
+
+1. 「自動で切り替える」を押す。1.5秒ごとに、1行目の状態が勝手に切り替わります。
+2. 左のメモ欄をクリックして、文字を打ち続ける。
+3. 右のメモ欄でも、同じことをする。
+
+ほかのボタンは、1回の操作でDOMがどれだけ変わるかを、落ち着いて数えるのに使えます。
+
+<Question>
+左では、何が起きましたか。
+「DOMの変更」の数は、1回の切り替えごとに、左と右でそれぞれどう増えましたか。右は、DOMの何を変えているのでしょうか。
+</Question>
+
+<Reveal>
+
+左では、1.5秒ごとに、打った文字が消え、フォーカスも外れます。
+切り替えのたびに、表をまるごと1つ取り除き（削除1）、新しい表をまるごと1つ足しています（追加1）。中の行も入力欄も、すべて新しい要素に替わります。
+
+右では、切り替えのたびに増えるのは「文字1」だけです。「貸出中」を「返却済」に書き換えているだけで、入力欄は同じ要素のままです。だから、打った文字もフォーカスも残ります。
+
+打っている途中の文字も、どこにフォーカスがあるかも、データ（`loans`）には入っていません。DOMの要素だけが持っています。要素を捨てなければ、失われません。
+
+</Reveal>
+
+## 前回の画面と比べて、違うところだけ直すには？
+
+ここからは、1つ前に描いたときの画面を「前回の画面」、これから描く画面を「今回の画面」と呼びます。
+
+`miniReact.ts` を、デモの右側と同じ「違うところだけ直す」ものに差し替えました（その2）。`app.ts` は、1文字も変えていません。
+
+<Sandbox spec={diffByIndexSandbox} />
+
+<Question>
+さっきと同じ操作（メモ欄に入力 → ほかの行の「状態を切り替える」）をしてください。メモはどうなりましたか。
+`app.ts` を1文字も変えずに済んだのは、なぜでしょうか。
+</Question>
+
+<Reveal>
+
+メモは残ります。
+
+`app.ts` を変えずに済んだのは、アプリが書いているのが「データがこうなら、画面はこう」という `view()` だけだからです。DOMのどこをどう直すかは、ミニReactの中に閉じ込められています。
+
+これで、0-2の2つの版のよいところが両立しました。アプリは、B版のようにデータだけを直します。DOMは、A版のように必要なところだけが直ります。DOMの直し忘れは、アプリの側では起きようがありません。
+
+「いまの状態から、あるべき画面を書く」というこの書き方を<Term>宣言的UI</Term>と呼び、よく UI = f(state) と書き表します。
+
+</Reveal>
+
+では、ミニReactの中では何をしているのでしょうか。上の枠の `miniReact.ts` のタブを開き、`update` という関数を探してください。
+`update` は、前回のオブジェクト（`oldNode`）と今回のオブジェクト（`newNode`）を受け取ります。`dom` は、前回のオブジェクトから作ったDOMです。
+
+<Question>
+`update` の中は、3つの場合に分かれています。それぞれ、どんな場合に、DOMに何をしているでしょうか。
+3つのうち、メモが残ることに効いているのは、どれでしょうか。
+</Question>
+
+<Reveal>
+
+```ts
+function update(parent: Node, dom: Node, oldNode: Child, newNode: Child): void {
+  // どちらも文字：違っていたら文字だけ書き換える。
+  if (typeof oldNode === 'string' && typeof newNode === 'string') {
+    if (oldNode !== newNode) dom.textContent = newNode;
+    return;
+  }
+  // 種類が違う（div → p、要素 → 文字 など）：使い回せないので、作り直して置き換える。
+  if (typeof oldNode === 'string' || typeof newNode === 'string' || oldNode.type !== newNode.type) {
+    parent.replaceChild(createDom(newNode), dom);
+    return;
+  }
+  // 種類が同じ：DOMはそのまま使い、変わった属性と子だけ直す。
+  if (dom instanceof HTMLElement) updateProps(dom, oldNode.props, newNode.props);
+  updateChildren(dom, oldNode.children, newNode.children);
+}
+```
+
+メモが残ることに効いているのは、3つ目です。前回と今回で要素の種類が同じなら、DOMの要素は作り直さずに、そのまま使います。入力欄も同じ要素のままなので、打った文字が残ります。
+
+`updateProps` は、前回と今回の属性を比べて、違うものだけをDOMに書く関数です。
+`updateChildren` は、子を先頭から順に、同じ位置のものどうしで、また `update` に渡します。こうして木を下までたどります。
+
+`render` は、前回描いたオブジェクトを覚えておき、2回目からは `update` を呼びます。
+前回と今回の画面を見比べて、DOMに必要な変更を割り出すこの作業を、Reactでは<Term>差分検出</Term>（reconciliation）と呼びます。
+
+</Reveal>
+
+## 先頭に1件足すと、なぜメモがずれる？
+
+うまくいったように見えますが、上の枠（その2）で、もう1つ試してください。
+
+1. 枠の右上の「最初に戻す」を押す。
+2. 「リーダブルコード」のメモ欄に、文字を入力する。
+3. 「先頭に1件追加」を押す。
+
+<Question>
+入力したメモは、どの行にありますか。
+ミニReactは、子を「先頭から順に、同じ位置のものどうし」で比べます。追加する前の1行目と、追加したあとの1行目は、それぞれどの備品の行でしょうか。そのとき、1行目の入力欄の要素はどう扱われるでしょうか。
+</Question>
+
+<Reveal>
+
+メモは、「新しい備品4」の行に移ってしまいます。
+
+位置で比べると、前回の1行目（リーダブルコード）と、今回の1行目（新しい備品4）が対応づけられます。どちらも同じ種類（`tr`）なので、DOMは使い回され、文字だけが「新しい備品4」に書き換えられます。
+入力欄の要素も使い回されるので、打ってあった文字がそのまま残ります。以下の行も1つずつずれて、最後に行が1つ足されます。
+
+<svg className="diagram" viewBox="0 0 760 250" role="img" aria-labelledby="key-title">
+  <title id="key-title">位置で対応づけると前回の1行目が今回の1行目に使い回されるが、keyで対応づけると同じ備品の行どうしが対応する</title>
+  <defs>
+    <marker id="key-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="185" y="20" fontWeight="bold">位置で対応づける</text>
+    <text x="575" y="20" fontWeight="bold">key で対応づける</text>
+    <text x="80" y="46">前回</text>
+    <text x="290" y="46">今回</text>
+    <text x="470" y="46">前回</text>
+    <text x="680" y="46">今回</text>
+  </g>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="1.5">
+    <rect x="10" y="56" width="140" height="34" />
+    <rect x="10" y="100" width="140" height="34" />
+    <rect x="10" y="144" width="140" height="34" />
+    <rect x="220" y="56" width="140" height="34" />
+    <rect x="220" y="100" width="140" height="34" />
+    <rect x="220" y="144" width="140" height="34" />
+    <rect x="220" y="188" width="140" height="34" strokeDasharray="5 4" />
+    <rect x="400" y="100" width="140" height="34" />
+    <rect x="400" y="144" width="140" height="34" />
+    <rect x="400" y="188" width="140" height="34" />
+    <rect x="610" y="56" width="140" height="34" strokeDasharray="5 4" />
+    <rect x="610" y="100" width="140" height="34" />
+    <rect x="610" y="144" width="140" height="34" />
+    <rect x="610" y="188" width="140" height="34" />
+  </g>
+  <g fill="none" stroke="#1f2328" strokeWidth="1.5" markerEnd="url(#key-arrow)">
+    <path d="M150 73 H218" />
+    <path d="M150 117 H218" />
+    <path d="M150 161 H218" />
+    <path d="M540 117 H608" />
+    <path d="M540 161 H608" />
+    <path d="M540 205 H608" />
+  </g>
+  <g fontSize="15" fill="#1f2328" textAnchor="middle">
+    <text x="80" y="79">リーダブルコード</text>
+    <text x="80" y="123">プロジェクター</text>
+    <text x="80" y="167">HDMIケーブル</text>
+    <text x="290" y="79">新しい備品4</text>
+    <text x="290" y="123">リーダブルコード</text>
+    <text x="290" y="167">プロジェクター</text>
+    <text x="290" y="211">HDMIケーブル</text>
+    <text x="470" y="123">リーダブルコード</text>
+    <text x="470" y="167">プロジェクター</text>
+    <text x="470" y="211">HDMIケーブル</text>
+    <text x="680" y="79">新しい備品4</text>
+    <text x="680" y="123">リーダブルコード</text>
+    <text x="680" y="167">プロジェクター</text>
+    <text x="680" y="211">HDMIケーブル</text>
+  </g>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="185" y="244">矢印：DOMを使い回す相手</text>
+    <text x="575" y="244">点線の箱：新しく作る行</text>
+  </g>
+</svg>
+
+<p className="caption">図：左は、違う備品の行どうしが対応づけられている。右は、同じ備品の行どうしが対応づけられている。</p>
+
+本当は、図の右のように、同じ備品の行どうしを対応づけたいのです。けれども、オブジェクトを見比べるだけでは、どれとどれが同じ備品かは、ミニReactにはわかりません。
+
+</Reveal>
+
+## どれとどれが同じかを、どう伝える？
+
+ミニReactを完成版に差し替えました。完成版は、行に「目印」が書いてあれば、位置ではなく目印が同じものどうしを対応づけます。
+この目印を `key` と呼びます。`app.ts` には、まだ `key` を書いていません。
+
+<Sandbox spec={keyedSandbox} />
+
+`app.ts` の `view()` の中に、行を作っている次の部分があります。
+
+```ts
+h(
+  'tr',
+  null,
+```
+
+この `null` を `{ key: loan.id }` に書き換えてから、さっきの操作（メモ欄に入力 → 「先頭に1件追加」）をもう一度してください。
+
+<Question>
+`key` を書く前と後で、結果はどう変わりましたか。
+`key` には `loan.id` を使いました。もし、配列の中の位置（0, 1, 2…）を `key` にしたら、どうなるでしょうか。
+</Question>
+
+<Reveal>
+
+`key` を書くと、メモは「リーダブルコード」の行に残ります。新しい行は、新しいDOMとして先頭に入ります。
+
+完成版の `miniReact.ts` は、今回の子に対応する前回の子を、次のように探しています。
+
+```ts
+function findOldIndex(
+  newChild: Child,
+  index: number,
+  oldChildren: Child[],
+  oldIndexByKey: Map<unknown, number>,
+): number | undefined {
+  const key = keyOf(newChild);
+  if (key !== undefined) return oldIndexByKey.get(key);
+  return keyOf(oldChildren[index]) === undefined ? index : undefined;
+}
+```
+
+`keyOf` は、仮想ノードから `key` を取り出す関数です。`oldIndexByKey` は、「この `key` の子は、前回は何番目だったか」を引ける表です。
+`key` があれば、同じ `key` を持つ前回の子を探します。なければ、これまでどおり同じ位置の子を使います。相手が見つからなかった子（`undefined`）は、新しくDOMを作って、その位置に入れます。
+
+配列の中の位置を `key` にすると、先頭に足したときに、どの備品も前回とは違う `key` を持つことになります（リーダブルコードは 0 から 1 に変わります）。今回の `key` が 0 の行は「新しい備品4」なので、前回の `key` が 0 だったリーダブルコードの行と対応づけられます。結果は「位置で対応づける」のと同じで、メモはずれたままです。
+`key` は、「前回のどれと、今回のどれが同じものか」を伝える目印です。データの `id` のように、並び順が変わっても変わらない値を使います。
+
+</Reveal>
+
+## 本物のReactでも、同じことが起きる？
+
+ここまでは自作のミニReactでした。下のデモは、本物のReactで動いています。
+同じ一覧を、`key` の付け方だけを変えて3つ並べました。入力欄には、最初に「（備品名）を借りる理由」と入っています。
+
+<KeyReorder />
+
+<Question>
+「先頭に追加」や「逆順にする」を押してください。3つのうち、「ずれ」が出るのはどれでしょうか。
+「key に位置」は、「key なし」と違う結果になりましたか。
+</Question>
+
+<Reveal>
+
+「key なし」と「key に位置」は、同じようにずれます。「key に id」だけが、ずれません。ミニReactで見たことと同じです。
+
+Reactも、前回と今回の画面を見比べるときに、同じ決まりを使っています。同じ位置にある同じ種類のものは、前回のものを引き継ぎます。`key` があれば、位置ではなく `key` で対応づけます。
+
+Reactは、開発中に `key` を書かずに一覧を描くと、コンソールに警告を出します。警告を消すために位置を `key` にしても、対応づけは変わらないので、ずれは直りません。
+
+</Reveal>
+
+## JSXの正体は？
+
+`app.ts` の `view()` は、`h()` が何重にも入れ子になっていて、どこが表のどの部分なのかが読み取りにくくなっています。
+そこで、同じ内容を、HTMLに似た書き方で書けるようにしたのが<Term>JSX</Term>です。下は、同じ貸出一覧をJSXで書いたものです。
+
+<Sandbox spec={jsxSandbox} />
+
+ブラウザは、JSXをそのまま実行できません。実行する前に、変換の道具（このページでは枠の中の仕組み、ふだんの開発ではViteなど）が、JSXをふつうの関数呼び出しに書き換えます。
+先頭の2行のコメントは、その書き換え方の指示です。2行目の `@jsx h` が、「このファイルのJSXは、`h()` の呼び出しに書き換えてください」という意味です。たとえば、次の2つは同じ意味になります。
+
+```tsx
+<td>{loan.itemName}</td>
+<input size={10} aria-label={`${loan.itemName}のメモ`} />
+```
+
+```ts
+h('td', null, loan.itemName);
+h('input', { size: 10, 'aria-label': `${loan.itemName}のメモ` });
+```
+
+タグの名前が1つ目の引数に、属性が2つ目の引数のオブジェクトに、タグの中身が3つ目以降の引数になります。
+
+<Question>
+JSXには、HTMLにはない決まりがあります。「JSXは `h()` の呼び出しに書き換えられる」ことから、次の2つの理由を説明してください。
+
+- 関数が `return` できるJSXは、いちばん外側の要素が1つだけ。`return <td>A</td><td>B</td>` とは書けない。
+- 波括弧 `{ }` の中に、`if` や `for` は書けない。
+</Question>
+
+<Reveal>
+
+**いちばん外側の要素は1つ**：`return <td>A</td><td>B</td>` は、`return h('td', null, 'A') h('td', null, 'B')` と書いているのと同じです。関数が返せる値は1つだけなので、これは書けません。並べたいときは、1つの要素で包んで、その子にします。
+
+**波括弧の中に `if` や `for` は書けない**：波括弧の中身は、`h()` の引数の位置にそのまま置かれます。引数に書けるのは、値になるもの（式）だけです。だから、出し分けには `条件 ? A : B`、くり返しには `map` を使います。
+
+同じところから出てくる決まりが、あと2つあります。
+
+**タグは必ず閉じる**：HTMLでは `<input>` を閉じなくても済みますが、それはブラウザが「`input` は子を持たない」と知っているからです。JSXは、タグごとの事情を知りません。どのタグも同じ決まりで、「ここまでがこの呼び出しの子です」と閉じて示します（`<input />`）。
+
+**`class` ではなく `className` と書く**：JSXの属性は、`h()` の2つ目の引数になるオブジェクトのキーになります。そのため、属性の名前はJavaScriptでの名前に合わせます。`class` はJavaScriptでは別の意味を持つ言葉なので、DOMでの名前と同じ `className` を使います。`onClick` のように、単語をつないだ名前は2語目を大文字で始めます（キャメルケース）。`aria-label` のような `aria-` や `data-` で始まる属性だけは、HTMLと同じくハイフンで書きます。
+
+ReactのJSXも、考え方は同じです。書き換え先が `h` ではなく、Reactが用意した関数になります（`createElement`、いまのReactでは同じ役目の `jsx`。引数の渡し方などの細かい点は違います）。
+JSXはHTMLではありません。HTMLに似せて書ける、関数呼び出しの別の書き方です。
+
+</Reveal>
+
+## この仕組みは「速い」のか？
+
+<Question>
+ミニReactは、画面全体のオブジェクトを作り、前回のものと全部見比べてから、DOMを直します。
+「1行目の状態の文字を書き換える」だけなら、0-2のA版のように直接DOMに書くのと比べて、速いでしょうか。遅いでしょうか。
+</Question>
+
+<Reveal>
+
+速くはありません。直接書けば、DOMの操作を1回するだけです。ミニReactは、オブジェクトを全部作り、全部見比べたうえで、同じ操作を1回します。見比べるぶんは、追加の仕事です。
+
+それでもこの仕組みを使うのは、速さのためではありません。「データから画面を書くだけ」という、直し忘れの起きない書き方を保ったまま、DOMの変更を必要なところだけに抑えられるからです。
+0-1で見たとおり、重いのはDOMを変えたあとのレイアウトの再計算でした。DOMの変更が必要なところだけなら、見比べる手間を足しても、たいていは十分な速さで動きます。
+
+</Reveal>
+
+## ミニReactは、本物のReactの何にあたる？
+
+<Question>
+デモの右側（違うところだけ直す）では、1.5秒ごとの切り替えのたびに、2つのことが起きていました。
+毎回まるごと作り直していたものは何で、ほんの少ししか変わらなかったものは何だったでしょうか。
+</Question>
+
+<Reveal label="答えと、Reactとの対応を見る">
+
+毎回まるごと作り直していたのは、画面を表すオブジェクトです。ほんの少ししか変わらなかったのは、DOMです（文字が1か所だけ）。
+Reactでは、この2つの段階に別々の名前が付いています。
+
+| 今日作ったもの | Reactでの呼び名 |
+|---|---|
+| `h()` | `createElement`（いまのJSXの書き換え先は、同じ役目の `jsx`） |
+| `h()` が返すオブジェクト（仮想ノード） | React要素 |
+| `view()` を呼んで画面のオブジェクトを作り、前回と見比べること | <Term>レンダー</Term> |
+| 見比べた結果を、DOMに書くこと | <Term>コミット</Term> |
+| `key` | `key` |
+
+レンダーしても、DOMが変わるとは限りません。見比べた結果、違いがなければ、DOMには何も書かれません。
+
+ミニReactは、考え方をつかむための模型です。本物のReactとは、作りが違うところがあります。たとえば、ミニReactは見比べながらその場でDOMに書きますが、Reactは先に全部を見比べてから、まとめてDOMに書きます。
+今日つかんでほしいのは、次の3つです。
+
+- 画面を、状態から計算した「オブジェクトの木」として書く（UI = f(state)）。
+- 前回の木と見比べて、違うところだけをDOMに反映する。
+- 一覧では、どれとどれが同じものかを `key` で伝える。
+
+</Reveal>
+
+## よくある誤解
+
+<Misconception wrong="仮想DOMがあるから、Reactは速い。">
+
+見比べるぶんは追加の仕事で、必要なところを直接DOMに書くのと比べれば、速くはなりません。得ているのは速さではなく、状態から画面を書くだけで済む、という書きやすさです。仮想DOMは、そのための手段です。
+
+</Misconception>
+
+<Misconception wrong="再レンダリングとは、DOMを全部書き換えることだ。">
+
+レンダーは、画面のオブジェクトを作り直すことです。DOMに書かれるのは、前回と違っていたところだけです。作り直した結果が前回と同じなら、DOMには何も書かれません。
+
+</Misconception>
+
+<Misconception wrong="key は、警告を消すために書くものだ。">
+
+`key` は、前回のどれと今回のどれが同じものかを伝える目印です。警告を消すだけのために位置を `key` にしても、対応づけは変わりません。
+
+</Misconception>
+
+<Misconception wrong="JSXは、JavaScriptの中に書けるHTMLだ。">
+
+JSXは、関数呼び出しの別の書き方です。いちばん外側が1つ、波括弧の中は式、タグは閉じる、`className` と書く、といった決まりは、どれもそこから出てきます。
+
+</Misconception>
+
+## 公式ドキュメント
+
+今日の内容のあとで読むと、ルールの理由がつながるページです。
+
+- <DocLink href="https://ja.react.dev/learn/writing-markup-with-jsx">react.dev：JSX でマークアップを記述する</DocLink>（「JSX のルール」の3つが、今日の「外側は1つ」「タグを閉じる」「`className`」にあたる。1つ目のルールの下にある囲みが、今日の説明と同じことを言っている）
+- <DocLink href="https://ja.react.dev/learn/javascript-in-jsx-with-curly-braces">react.dev：JSX に波括弧で JavaScript を含める</DocLink>（波括弧の中に何を書けるか）
+- <DocLink href="https://ja.react.dev/learn/rendering-lists">react.dev：リストのレンダー</DocLink>（`key` の節。なぜ位置を `key` にしてはいけないかが書いてある）
+- <DocLink href="https://ja.react.dev/learn/preserving-and-resetting-state">react.dev：state の保持とリセット</DocLink>（「同じ位置の同じコンポーネントは state が保持される」の節が、デモで見た「ずれ」の理由。「コンポーネント」と「state」は第1部で扱うので、いまは雰囲気だけでよい）
+- <DocLink href="https://ja.react.dev/learn/render-and-commit">react.dev：レンダーとコミット</DocLink>（ステップ2がレンダー、ステップ3がコミット）
+- <DocLink href="https://svelte.jp/blog/virtual-dom-is-pure-overhead">Svelte：仮想DOMは純粋なオーバーヘッド</DocLink>（「仮想DOMは速い」という言い方への反論。別のフレームワークの作者による記事）
+
+## 今日の一文
+
+今日わかったことを、自分の言葉で1文にしてください。書けたら、例と見比べます。
+
+<Reveal label="例を見る">
+
+画面を状態から計算したオブジェクトとして書き、前回との違いだけをDOMに反映する。仮想DOMは、そのための手段である。
+
+</Reveal>
+
+## 次回の仕様変更予告
+
+次回は、Reactを使い始める前の最後の準備です。Reactの `useState` や `useEffect` でつまずく原因は、たいていJavaScriptそのものの性質にあります。
+
+<Question>
+今日の `app.ts` では、`view()` を呼ぶたびに、行ごとに `() => toggleStatus(loan.id)` という関数を新しく作っていました。
+この関数は、ボタンが押されたとき、いつの時点の `loan` を見ているでしょうか。画面を10回描き直したあとに押したら、どうでしょうか。
+</Question>
