@@ -2,6 +2,8 @@ export type SandboxFile = {
   /** タブに出す名前（例：'rerender.ts'）。import の解決にも使うので、1つの例の中で重ならないようにする */
   name: string;
   code: string;
+  /** 前の段階のコード。渡すと、そこから変わった行に印を付ける */
+  changedFrom?: string;
 };
 
 // ページに埋め込む「コードと実行結果」1組ぶんの定義。

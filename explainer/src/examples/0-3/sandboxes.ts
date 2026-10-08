@@ -25,16 +25,16 @@ export const fullRedrawSandbox: SandboxSpec = {
   start: 'startApp',
 };
 
-// その2：前回と比べて、違うところだけ直す（子は位置で対応づける）。
+// その2：前回と比べて、違うところだけ直す（子は位置で対応づける）。その1から変わった行に印を付ける。
 export const diffByIndexSandbox: SandboxSpec = {
-  files: [app, { name: 'miniReact.ts', code: v2MiniReactCode }],
+  files: [app, { name: 'miniReact.ts', code: v2MiniReactCode, changedFrom: v1MiniReactCode }],
   entry: 'app.ts',
   start: 'startApp',
 };
 
-// 完成版：子を key で対応づけられる。app.ts にはまだ key を書いていない（読者が足す）。
+// 完成版：子を key で対応づけられる。app.ts にはまだ key を書いていない（読者が足す）。その2から変わった行に印を付ける。
 export const keyedSandbox: SandboxSpec = {
-  files: [app, { name: 'miniReact.ts', code: finalMiniReactCode }],
+  files: [app, { name: 'miniReact.ts', code: finalMiniReactCode, changedFrom: v2MiniReactCode }],
   entry: 'app.ts',
   start: 'startApp',
 };

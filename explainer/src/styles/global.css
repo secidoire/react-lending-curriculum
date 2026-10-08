@@ -609,3 +609,25 @@ pre.pane {
   border-radius: 4px;
   color: var(--warning);
 }
+
+/* 前の段階から変わった行。色だけでなく、左の線と説明文でも示す。 */
+.code-editor .cm-changed-line {
+  background: #fff8c5;
+  box-shadow: inset 4px 0 0 #bf8700;
+}
+
+.sandbox-legend {
+  margin: 0;
+  padding: 0.25em 0.75em;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.875em;
+}
+
+.sandbox-legend-mark {
+  display: inline-block;
+  width: 1.5em;
+  height: 1em;
+  background: #fff8c5;
+  box-shadow: inset 4px 0 0 #bf8700;
+  vertical-align: middle;
+}

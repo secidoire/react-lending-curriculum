@@ -84,6 +84,56 @@ export function createDom(node: Child): Node {
 - `setLoans(next)`：データを新しいものに替えて、`render(view(), root)` で画面を描き直す関数。
 - `addToTop()` と `toggleStatus(id)`：操作の処理。新しいデータを作って `setLoans` に渡すだけです。
 
+ボタンを押してから画面が変わるまでの流れは、次のとおりです。
+
+<svg className="diagram" viewBox="0 0 760 335" role="img" aria-labelledby="seq-title">
+  <title id="seq-title">ボタンを押すと、app.ts がデータを替えて画面のオブジェクトを作り、miniReact.ts がそれをDOMに反映する</title>
+  <defs>
+    <marker id="seq-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <g stroke="#57606a" strokeWidth="1.5" strokeDasharray="4 4">
+    <path d="M80 46 V325" />
+    <path d="M285 46 V325" />
+    <path d="M500 46 V325" />
+    <path d="M685 46 V325" />
+  </g>
+  <g fill="#f6f8fa" stroke="#1f2328" strokeWidth="2">
+    <rect x="20" y="10" width="120" height="36" rx="4" />
+    <rect x="225" y="10" width="120" height="36" rx="4" />
+    <rect x="425" y="10" width="150" height="36" rx="4" />
+    <rect x="620" y="10" width="130" height="36" rx="4" />
+  </g>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="1.5">
+    <rect x="150" y="104" width="270" height="34" rx="4" />
+    <rect x="150" y="152" width="270" height="34" rx="4" />
+  </g>
+  <g fill="none" stroke="#1f2328" strokeWidth="1.5" markerEnd="url(#seq-arrow)">
+    <path d="M80 86 H283" />
+    <path d="M285 226 H498" />
+    <path d="M500 268 H683" />
+    <path d="M685 310 H82" strokeDasharray="6 4" />
+  </g>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="80" y="34">あなた</text>
+    <text x="285" y="34">app.ts</text>
+    <text x="500" y="34">miniReact.ts</text>
+    <text x="685" y="34">DOM（画面）</text>
+    <text x="182" y="78">1. ボタンを押す</text>
+    <text x="285" y="127">2. setLoans でデータを替える</text>
+    <text x="285" y="175">3. view() でオブジェクトを作る</text>
+    <text x="392" y="218">4. render(オブジェクト)</text>
+    <text x="592" y="260">5. DOMを作る・直す</text>
+    <text x="385" y="302">6. 画面が変わる</text>
+  </g>
+</svg>
+
+<p className="caption">図：1回の操作の流れ。縦の点線は、上から下へ時間が進むことを表す。</p>
+
+2と3が `app.ts` の仕事、5が `miniReact.ts` の仕事です。
+このあと、`miniReact.ts` を2回差し替えます。そのたびに変わるのは、5の中身（オブジェクトを、どうやってDOMにするか）だけです。1〜4は、最後まで変わりません。
+
 <Sandbox spec={fullRedrawSandbox} />
 
 <Question>
@@ -163,7 +213,10 @@ export function render(vnode: VNode, container: Element): void {
 
 </Reveal>
 
-では、ミニReactの中では何をしているのでしょうか。上の枠の `miniReact.ts` のタブを開き、`update` という関数を探してください。
+では、ミニReactの中では何をしているのでしょうか。上の枠の `miniReact.ts（変更あり）` のタブを開いてください。色の付いた行が、その1から変わったところです。
+`h` と `createDom` は、その1のままです。変わったのは `render` で、そこから呼ばれる `update`・`updateProps`・`updateChildren` が新しく足されています。
+
+まず、`update` という関数を読みます。
 `update` は、前回のオブジェクト（`oldNode`）と今回のオブジェクト（`newNode`）を受け取ります。`dom` は、前回のオブジェクトから作ったDOMです。
 
 <Question>
@@ -191,12 +244,78 @@ function update(parent: Node, dom: Node, oldNode: Child, newNode: Child): void {
 }
 ```
 
-メモが残ることに効いているのは、3つ目です。前回と今回で要素の種類が同じなら、DOMの要素は作り直さずに、そのまま使います。入力欄も同じ要素のままなので、打った文字が残ります。
+流れを図にすると、次のようになります。
+
+<svg className="diagram" viewBox="0 0 760 385" role="img" aria-labelledby="flow-title">
+  <title id="flow-title">update は、文字どうしなら文字を書き換え、種類が違えば作り直し、種類が同じならDOMを使い回して、子を1つずつ同じ流れにかける</title>
+  <defs>
+    <marker id="flow-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <g fill="#f6f8fa" stroke="#1f2328" strokeWidth="2">
+    <rect x="230" y="10" width="220" height="40" rx="4" />
+  </g>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="2" strokeDasharray="6 4">
+    <rect x="230" y="85" width="220" height="40" rx="20" />
+    <rect x="230" y="165" width="220" height="40" rx="20" />
+  </g>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="2">
+    <rect x="530" y="85" width="225" height="40" rx="4" />
+    <rect x="530" y="165" width="225" height="40" rx="4" />
+    <rect x="175" y="250" width="330" height="40" rx="4" />
+    <rect x="175" y="325" width="330" height="40" rx="4" />
+  </g>
+  <g fill="none" stroke="#1f2328" strokeWidth="1.5" markerEnd="url(#flow-arrow)">
+    <path d="M340 50 V83" />
+    <path d="M450 105 H528" />
+    <path d="M340 125 V163" />
+    <path d="M450 185 H528" />
+    <path d="M340 205 V248" />
+    <path d="M340 290 V323" />
+    <path d="M175 345 H125 V30 H228" />
+  </g>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="340" y="36">update(前回, 今回)</text>
+    <text x="340" y="111">どちらも文字？</text>
+    <text x="340" y="191">要素の種類が同じ？</text>
+    <text x="642" y="111">違えば、文字を書き換える</text>
+    <text x="642" y="191">作り直して、置き換える</text>
+    <text x="340" y="276">DOMは使い回し、属性の違いだけ直す</text>
+    <text x="340" y="351">子を1つずつ、この流れにかける</text>
+    <text x="488" y="98">はい</text>
+    <text x="376" y="150">いいえ</text>
+    <text x="488" y="178">いいえ</text>
+    <text x="368" y="232">はい</text>
+    <text x="62" y="185">子の数だけ</text>
+    <text x="62" y="207">くり返す</text>
+  </g>
+</svg>
+
+<p className="caption">図：`update` の流れ。点線の角丸の箱は判断、実線の箱はDOMへの操作。</p>
+
+メモが残ることに効いているのは、3つ目（図の左下へ進む道）です。前回と今回で要素の種類が同じなら、DOMの要素は作り直さずに、そのまま使います。入力欄も同じ要素のままなので、打った文字が残ります。
 
 `updateProps` は、前回と今回の属性を比べて、違うものだけをDOMに書く関数です。
 `updateChildren` は、子を先頭から順に、同じ位置のものどうしで、また `update` に渡します。こうして木を下までたどります。
 
-`render` は、前回描いたオブジェクトを覚えておき、2回目からは `update` を呼びます。
+`render` は、前回描いたオブジェクトを覚えておき、2回目からは `update` を呼ぶように変わりました。その1では、中身は `container.replaceChildren(createDom(vnode))` の1行だけでした。
+
+```ts {4,8,10}
+const rendered = new WeakMap<Element, VNode>();
+
+export function render(vnode: VNode, container: Element): void {
+  const previous = rendered.get(container);
+  const dom = container.firstChild;
+
+  if (previous === undefined || dom === null) container.replaceChildren(createDom(vnode));
+  else update(container, dom, previous, vnode);
+
+  rendered.set(container, vnode);
+}
+```
+
+`rendered` は、「この場所に、前回どのオブジェクトを描いたか」を覚えておく表です。初めて描くときだけ全部を作り、2回目からは前回のオブジェクトと一緒に `update` に渡します。最後に、今回のオブジェクトを次回のために覚えます。
 前回と今回の画面を見比べて、DOMに必要な変更を割り出すこの作業を、Reactでは<Term>差分検出</Term>（reconciliation）と呼びます。
 
 </Reveal>
@@ -291,6 +410,7 @@ function update(parent: Node, dom: Node, oldNode: Child, newNode: Child): void {
 ## どれとどれが同じかを、どう伝える？
 
 ミニReactを完成版に差し替えました。完成版は、行に「目印」が書いてあれば、位置ではなく目印が同じものどうしを対応づけます。
+`miniReact.ts（変更あり）` のタブで色の付いた行が、その2から変わったところです。中心は、子どうしの対応づけをする `updateChildren` と、そこから呼ばれる新しい関数 `findOldIndex` です。`update` の3つの場合分けは、その2のままです。
 この目印を `key` と呼びます。`app.ts` には、まだ `key` を書いていません。
 
 <Sandbox spec={keyedSandbox} />
@@ -444,6 +564,14 @@ Reactでは、この2つの段階に別々の名前が付いています。
 レンダーしても、DOMが変わるとは限りません。見比べた結果、違いがなければ、DOMには何も書かれません。
 
 ミニReactは、考え方をつかむための模型です。本物のReactとは、作りが違うところがあります。たとえば、ミニReactは見比べながらその場でDOMに書きますが、Reactは先に全部を見比べてから、まとめてDOMに書きます。
+今日は、`miniReact.ts` を3つの段階で作りました。`app.ts` は、`key` を1か所足した以外、変えていません。
+
+| 段階 | `render` がすること | 子どうしの対応づけ | 入力中のメモ |
+|---|---|---|---|
+| その1 | 全部捨てて、作り直す | （比べない） | 画面が変わるたびに消える |
+| その2 | 前回と見比べて、違うところだけ直す | 位置が同じものどうし | 残る。ただし、先頭に足すとずれる |
+| 完成版 | 前回と見比べて、違うところだけ直す | `key` が同じものどうし（なければ位置） | 残る。`key` を書けば、ずれない |
+
 今日つかんでほしいのは、次の3つです。
 
 - 画面を、状態から計算した「オブジェクトの木」として書く（UI = f(state)）。

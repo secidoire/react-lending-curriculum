@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { changedLineNumbers } from './changedLines';
 import { CodeEditor } from './CodeEditor';
 import { SandboxPreview } from './SandboxPreview';
 import type { SandboxFile, SandboxSpec } from './types';
@@ -42,6 +43,7 @@ export function Sandbox({ spec, codeClosed = false }: Props) {
                 onClick={() => setActiveName(file.name)}
               >
                 {file.name}
+                {file.changedFrom !== undefined && '（変更あり）'}
               </button>
             ))}
           </span>
@@ -56,6 +58,13 @@ export function Sandbox({ spec, codeClosed = false }: Props) {
         </span>
       </figcaption>
 
+      {codeOpen && activeFile?.changedFrom !== undefined && (
+        <p className="sandbox-legend">
+          <span className="sandbox-legend-mark" aria-hidden="true" /> 左に線のある色付きの行は、前の段階の {activeFile.name}{' '}
+          から変わった行です。
+        </p>
+      )}
+
       <div className="sandbox-panes">
         {codeOpen && activeFile !== undefined && (
           <CodeEditor
@@ -63,6 +72,9 @@ export function Sandbox({ spec, codeClosed = false }: Props) {
             key={`${activeFile.name}:${resetCount}`}
             initialCode={activeFile.code}
             label={`${activeFile.name} のコード`}
+            changedLines={
+              activeFile.changedFrom === undefined ? [] : changedLineNumbers(activeFile.code, activeFile.changedFrom)
+            }
             onChange={changeActiveFile}
           />
         )}

@@ -19,6 +19,7 @@
 | @types/mdx | 導入時の最新安定版で固定する |
 | sucrase | 3.35.1（ページの上で書き換えられたTypeScript/JSXを、ブラウザ内でJavaScriptに変換する） |
 | codemirror / @codemirror/lang-javascript | 6.0.2 / 6.2.5（コードを書き換えるエディタ） |
+| @codemirror/state / @codemirror/view | 6.7.6 / 6.43.14（`codemirror` に含まれているもの。行に印を付けるために直接 import するので、明記している） |
 
 React公式ドキュメントが使っている Sandpack は採用しない。既定では外部のサービスでコードを変換するため、「外部と通信しない」方針に合わない。
 

@@ -49,6 +49,19 @@ test('コードが壊れているときは、実行結果の代わりにエラ�
   await expect.element(screen.getByRole('alert')).toBeVisible();
 });
 
+test('changedFrom を渡したファイルは、タブと説明で「前の段階から変わった」ことがわかる', async () => {
+  const staged: SandboxSpec = {
+    ...spec,
+    files: [spec.files[0] ?? { name: 'main.ts', code: '' }, { name: 'message.ts', code: "export const message = '最初の表示';", changedFrom: '' }],
+  };
+  const screen = await render(<Sandbox spec={staged} />);
+  await expect.element(screen.getByText(/から変わった行です/)).not.toBeInTheDocument();
+
+  await screen.getByRole('tab', { name: 'message.ts（変更あり）' }).click();
+
+  await expect.element(screen.getByText(/から変わった行です/)).toBeVisible();
+});
+
 test('codeClosed を付けると、コードは「コードを見る」を押すまで出ない', async () => {
   const screen = await render(<Sandbox spec={spec} codeClosed />);
 
