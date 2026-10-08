@@ -32,6 +32,13 @@ export default defineConfig([
     rules: { '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^h$' }] },
   },
 
+  // 悪い例は、lintが止めてくれる書き方をわざと載せることがある（エフェクトの中での setState など）。
+  // 読者に見せるコードに「ここが悪い」という印（lintを止めるコメント）を残さないよう、設定の側で止める。
+  {
+    files: ['explainer/src/examples/**/bad-examples/**'],
+    rules: { 'react-hooks/set-state-in-effect': 'off' },
+  },
+
   // ブラウザで動くコード（解説ページと、その中で動かす例）
   {
     files: ['explainer/**'],

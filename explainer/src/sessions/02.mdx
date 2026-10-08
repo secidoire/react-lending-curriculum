@@ -1,0 +1,323 @@
+import {
+  derivedStateSandbox,
+  itemsPageSandbox,
+  searchFieldSandbox,
+  syncWithEffectSandbox,
+} from '../examples/02/sandboxes'
+
+export const title = '検索と絞り込み'
+
+## 前回の予告を確かめよう
+
+総務の田中さんから、依頼が来ました。「備品が増えてきたので、名前で検索できるようにしてください。本だけに絞り込みたいときもあります。絞り込んだ結果が何件あるかも出してください。」
+
+<Question>
+検索欄に入力された文字は、state として持つことになります。
+では、「絞り込んだあとの一覧」と「その件数」も、state として持つべきでしょうか。予想を決めてから、先へ進みます。
+</Question>
+
+## 入力欄の中身は、誰が決めている？
+
+まず、入力欄を1つだけ置きます。Reactで入力欄を扱うときの、基本の形です。
+
+<Sandbox spec={searchFieldSandbox} />
+
+`<input>` に書いてある2つの属性を見てください。
+
+- `value={query}`：入力欄に表示する文字は、state の `query` です。
+- `onChange={(event) => setQuery(event.target.value)}`：入力されるたびに、この関数が呼ばれます。`event.target.value` は、入力されたあとの、入力欄の中身全体です。それを `setQuery` で state に入れています。
+
+`onChange` や `onClick` のように、利用者の操作に応じて呼ばれる関数を<Term>イベントハンドラ</Term>と呼びます。引数の `event` には、何が起きたかの情報が入っています。
+
+<Question>
+`<input>` から `onChange={...}` の部分を消して、入力欄に文字を打ってみてください。どうなりましたか。
+`value={query}` と書いたとき、入力欄に表示される文字を決めているのは、何でしょうか。
+</Question>
+
+<Reveal>
+
+`onChange` を消すと、何を打っても入力欄は空のままです。
+
+`value={query}` と書いた入力欄は、「表示するのは、いつも `value` に渡した値」という意味になります。キーを打っても、state の `query` が変わらなければ、表示は変わりません。
+`onChange` で state を更新して初めて、Reactが再レンダーし、新しい `query` が入力欄に表示されます。
+
+これは、0-3から見てきた UI = f(state) そのものです。入力欄の中身も、state から決まる画面の一部です。
+このように、中身を `value` に渡した値が決めている入力欄を、<Term>制御されたコンポーネント</Term>と呼びます。0-2や0-3のメモ欄は、中身をDOMが持っていました。そちらは「非制御」と呼びます。
+
+</Reveal>
+
+## 絞り込んだら、なぜ件数が合わない？
+
+検索と、「本だけ」の絞り込みと、件数の表示を作りました。一覧（`visibleItems`）と件数（`count`）を、それぞれ state として持っています。
+
+<Sandbox spec={derivedStateSandbox} codeClosed />
+
+コードは、まだ開かないでください。先に、画面の操作だけで調べます。
+
+<Question>
+「最初に戻す」を押してから、名前で検索したり、「本だけ」を切り替えたりして、一覧と件数が合わなくなる操作を見つけてください。
+見つけたら「コードを見る」を開いて、原因を探します。原因は、どの関数の、何が足りないことでしょうか。
+</Question>
+
+<Reveal>
+
+何も検索していない状態で「本だけ」にチェックを入れると、一覧は2件になるのに、件数は「5件を表示」のままです。
+
+`changeQuery` は、`setVisibleItems` と `setCount` の両方を呼んでいます。`changeCategory` は、`setCount` を呼び忘れています。
+
+```tsx
+function changeCategory(nextCategory: Category | 'all') {
+  setCategory(nextCategory);
+  const filtered = filterItems(initialItems, { query, category: nextCategory, sortByName: false });
+  setVisibleItems(filtered);
+}
+```
+
+0-2のA版と同じ形の困りごとです。あのときは、同じ情報がデータとDOMの2か所にありました。今度は、同じ情報が、いくつもの state に分かれて入っています。
+件数は、一覧の長さです。一覧は、検索の条件から決まります。それなのに別々の state に持っているので、条件が変わるたびに、全部を自分で合わせ直す必要があります。並び替えを足せば、合わせ直す場所がまた増えます。
+
+</Reveal>
+
+## エフェクトで自動的に合わせれば、解決する？
+
+「合わせ直すのを忘れるのが問題なら、条件が変わったときに自動で合わせればよい」と考えた版です。
+0-4で少しだけ見た `useEffect` を使っています。`query` か `category` が変わったら、一覧を計算し直して `setVisibleItems` に入れます。
+
+<Sandbox spec={syncWithEffectSandbox} />
+
+このコンポーネントは、レンダーされるたびに、そのときの「本だけ」の値と、表示する件数をコンソールに出します。
+
+<Question>
+コンソールの「消す」を押してから、「本だけ」に1回チェックを入れてください。コンソールには、何行出ましたか。
+1行目の「本だけ」と「表示する件数」は、合っていたでしょうか。
+</Question>
+
+<Reveal>
+
+2行出ます。1回の操作で、2回レンダーされています。
+
+1. `setCategory` で再レンダーされます。このとき `category` は新しい値ですが、`visibleItems` はまだ古いままです（1行目。「本だけ」は true なのに、件数は5）。
+2. そのレンダーが終わったあとで、エフェクトが動き、`setVisibleItems` を呼びます。
+3. もう一度レンダーされ、ようやく一覧が合います（2行目。件数は2）。
+
+表示は最後には合いますが、いったん「条件は新しいのに、一覧は古い」という食い違った内容でレンダーしてから、やり直しています。余分な仕事です。
+`set` の呼び忘れはなくなりましたが、「同じ情報を2か所に持っている」ことは変わっていません。
+
+</Reveal>
+
+## 持たなければ、合わせる必要もない？
+
+<Question>
+一覧は、もとの備品のデータと、検索の条件から計算できます。件数は、その一覧の長さです。
+計算すれば出せるものを、state として持たないことにしたら、コードはどうなるでしょうか。コンポーネントは、レンダーのたびに最初から呼ばれることを思い出してください。
+</Question>
+
+<Reveal>
+
+state は、利用者が決める「条件」だけにします。一覧と件数は、レンダーのたびに、その場で計算します。
+
+```tsx {3,6}
+export function ItemsPage() {
+  // stateは、利用者が決める「条件」だけ。
+  const [criteria, setCriteria] = useState(initialCriteria);
+
+  // 表示する一覧は、stateにしない。レンダーのたびに、条件から計算する。
+  const visibleItems = filterItems(initialItems, criteria);
+```
+
+条件が変わると再レンダーされ、`filterItems` がもう一度呼ばれて、新しい一覧ができます。件数は `visibleItems.length` です。合わせ直すコードは、どこにもありません。食い違う瞬間もありません。
+
+ほかの値から計算できる値を、<Term>派生データ</Term>と呼びます。派生データは、state にしません。これが、冒頭の予想の答えです。絞り込んだ一覧も、その件数も、state としては持ちません。
+「毎回計算すると遅いのでは」と心配になるかもしれませんが、数百件の絞り込みは一瞬で終わります。実際に遅くて困ったときの調べ方と直し方は、第7回で扱います。
+
+</Reveal>
+
+その形で作り直したのが、次の枠です。「名前順に並べる」も足してあります。
+
+3つの条件は、`criteria` という1つのオブジェクトにまとめて、1つの state にしました。1つだけ変えるときは、`{ ...criteria, query: 新しい文字 }` のように、中身をコピーしてから、変える項目だけを上書きした新しいオブジェクトを作ります（0-4で見た、イミュータブルな更新です）。
+チェックボックスでは、`value` の代わりに `checked`（チェックが入っているか）を使います。
+
+<Sandbox spec={itemsPageSandbox} />
+
+<Question>
+3つの条件を、いろいろな順番で切り替えてください。一覧と件数が合わなくなる操作は、見つかりましたか。
+`filterItems.ts` を開いてください。この関数をテストするのに、画面は必要でしょうか。
+</Question>
+
+<Reveal>
+
+合わなくなる操作はありません。一覧も件数も、いつも同じ1つの条件から計算しているからです。
+
+`filterItems(items, criteria)` は、備品の配列と条件を受け取って、配列を返すだけの関数です。Reactも画面も関係ないので、値を渡して結果を確かめるだけでテストできます。
+同じ引数なら、いつも同じ結果を返し、外にあるものを書き換えない関数を、<Term>純粋関数</Term>と呼びます。
+
+コンポーネントの関数も、同じ性質を持つように書きます。同じ props と state なら、同じJSXを返すこと。レンダーの最中に、外にあるものを書き換えないこと。
+Reactは、コンポーネントを何度でも、好きなときに呼び直します。何度呼ばれても同じ結果を返し、外を書き換えないなら、何度呼び直されても困りません。レンダー中に計算する書き方は、この性質の上に成り立っています。
+
+</Reveal>
+
+## state は、どのコンポーネントが持つ？
+
+上の枠の `SearchBox.tsx` を開いてください。入力欄を持っているのに、`useState` がありません。
+`SearchBox` が受け取っている `onChange` は、`<input>` の `onChange` とは別のもので、自分で名前を付けた props です。中身は、親の `ItemsPage` が渡した `setCriteria` です（`<SearchBox criteria={criteria} onChange={setCriteria} />`）。
+
+<svg className="diagram" viewBox="0 0 760 300" role="img" aria-labelledby="lift-title">
+  <title id="lift-title">条件のstateは親のItemsPageが持ち、SearchBoxには値をpropsで渡して変更をonChangeで受け取り、ItemNamesには条件から計算した一覧を渡す</title>
+  <defs>
+    <marker id="lift-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <rect x="180" y="10" width="400" height="100" rx="6" fill="#f6f8fa" stroke="#1f2328" strokeWidth="2" />
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="2">
+    <rect x="200" y="50" width="160" height="44" rx="4" strokeDasharray="6 4" />
+    <rect x="400" y="50" width="160" height="44" rx="4" strokeDasharray="6 4" />
+    <rect x="40" y="230" width="240" height="50" rx="4" />
+    <rect x="480" y="230" width="240" height="50" rx="4" />
+  </g>
+  <g fill="none" stroke="#1f2328" strokeWidth="1.5" markerEnd="url(#lift-arrow)">
+    <path d="M360 72 H398" />
+    <path d="M230 110 L130 228" />
+    <path d="M190 228 L290 112" strokeDasharray="6 4" />
+    <path d="M520 110 L600 228" />
+  </g>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="380" y="36" fontWeight="bold">ItemsPage</text>
+    <text x="280" y="78">state：criteria</text>
+    <text x="480" y="78">visibleItems</text>
+    <text x="379" y="64">計算</text>
+    <text x="160" y="261">SearchBox</text>
+    <text x="600" y="261">ItemNames</text>
+    <text x="95" y="165">criteria</text>
+    <text x="95" y="187">（いまの条件）</text>
+    <text x="330" y="165">onChange</text>
+    <text x="330" y="187">（新しい条件）</text>
+    <text x="640" y="170">items</text>
+  </g>
+</svg>
+
+<p className="caption">図：実線の矢印は props で渡す値、点線の矢印は「変わったことを知らせる」関数の呼び出し。点線の箱は、`ItemsPage` の中にある値。</p>
+
+<Question>
+検索の条件を必要としているのは、どのコンポーネントでしょうか。
+条件の state を `SearchBox` の中に持たせたら、何が困るでしょうか。
+</Question>
+
+<Reveal>
+
+条件を必要としているのは、入力欄を表示する `SearchBox` と、一覧を計算する `ItemsPage` です。
+state を `SearchBox` の中に持たせると、`ItemsPage` からは読めません。データは親から子へしか渡らないので（前回の図です）、子が持っている値を、親やとなりのコンポーネントは使えないのです。
+
+そこで、その値を必要とするコンポーネントをすべて含む、いちばん近いコンポーネントに state を置きます（ここでは `ItemsPage` です）。子には、いまの値を props で渡します。子は、変えてほしいときに、props で受け取った関数（`onChange`）を呼んで親に知らせます。
+関数そのものは、親から子へ props で渡っています。子がそれを呼ぶことで、新しい値が親に届きます。
+state を親へ移すことを、<Term>リフトアップ</Term>と呼びます。
+
+こうすると、検索の条件は `ItemsPage` の1か所にしかありません。入力欄も、一覧も、件数も、同じ1つの値から決まります。
+
+</Reveal>
+
+## フックには、どんな決まりがある？
+
+`useState` や `useEffect` のような、名前が `use` で始まるReactの関数を、フックと呼ぶのでした。フックを使うときには、守る決まりがあります。たとえば、次のようには書けません。
+
+```tsx
+export function ItemsPage({ items }: Props) {
+  if (items.length === 0) return <p>備品がありません。</p>;
+
+  const [criteria, setCriteria] = useState(initialCriteria);
+  // …
+```
+
+備品が1件もないときは、`useState` にたどり着く前に `return` してしまいます。
+
+<Question>
+コンポーネントは、レンダーのたびに最初から呼ばれます。仮に、1つのコンポーネントの中で、`useState` を3回呼んでいるとします。
+Reactは、「いま呼ばれた `useState` は、3つのうちのどれか」を、何を手がかりに見分けていると思いますか。
+</Question>
+
+<Reveal>
+
+`useState` には、名前も番号も渡していません。Reactが手がかりにしているのは、呼ばれた順番です。「このコンポーネントで1番目に呼ばれた `useState`」「2番目に呼ばれた `useState`」として覚えています。
+
+だから、レンダーのたびに、同じフックが、同じ順番で呼ばれる必要があります。条件によって呼ばれたり呼ばれなかったりすると、順番がずれてしまいます。上の例は、`useState` を `return` より前に移せば書けます。
+フックの決まりは、2つです。
+
+- フックは、コンポーネントのいちばん上の階層で呼ぶ。`if`・ループ・入れ子の関数の中や、途中の `return` より後ろでは呼ばない。
+- フックは、コンポーネント（と、あとの回で作る自作のフック）の中からだけ呼ぶ。
+
+いまは決まりとして覚えておいてください。発展編で、`useState` を自分で作り、順番がずれると何が起きるかを確かめます。
+
+</Reveal>
+
+## 今日の要点
+
+<Question>
+レビューの問いです。「検索の条件をURLに残して、ほかの人に共有できるようにしたい」と言われたら、条件はどこに置くことになるでしょうか。そのとき、`filterItems` は書き直す必要があるでしょうか。
+</Question>
+
+<Reveal label="答えと要点を見る">
+
+条件の置き場所が、`useState` からURLに変わります。けれども、`filterItems(items, criteria)` は、条件がどこから来たかを知りません。書き直す必要はありません。
+計算を純粋関数として外に出しておくと、条件の置き場所が変わっても、計算はそのまま使えます。
+
+state を決めるときは、次の順に考えます。
+
+1. 画面に出ている値を、すべて書き出す。
+2. 時間が経っても変わらないもの、親から props で受け取るもの、ほかの値から計算できるものを消す。残ったものが state になる。
+3. その state を必要とするコンポーネントの、共通の親に置く。
+
+今日の例では、残るのは「検索の文字」「種類」「並び順」の3つだけです。
+
+</Reveal>
+
+## よくある誤解
+
+<Misconception wrong="useEffect で計算して state に入れておけば、最適化になる。">
+
+逆です。エフェクトで state を合わせると、食い違った状態でいったんレンダーしてから、もう一度レンダーすることになります。レンダー中にそのまま計算するほうが、仕事が少なく、食い違う瞬間もありません。
+
+</Misconception>
+
+<Misconception wrong="画面に出す値は、すべて state にする。">
+
+state にするのは、ほかの値から計算できないものだけです。計算できる値まで state にすると、それらを合わせ続ける仕事が生まれます。
+
+</Misconception>
+
+<Misconception wrong="入力欄を持つコンポーネントが、その値の state を持つ。">
+
+state を置く場所は、「その値を誰が必要としているか」で決まります。入力欄のあるコンポーネントの外でも使う値なら、共通の親に置きます。
+
+</Misconception>
+
+## 公式ドキュメント
+
+今日の内容のあとで読むと、理由がつながるページです。
+
+- <DocLink href="https://ja.react.dev/learn/choosing-the-state-structure">react.dev：state 構造の選択</DocLink>（「冗長な state を避ける」の節が、今日の「計算できるものは持たない」）
+- <DocLink href="https://ja.react.dev/learn/you-might-not-need-an-effect">react.dev：そのエフェクトは不要かも</DocLink>（最初の例「props または state に基づいて state を更新する」が、今日のエフェクトの版）
+- <DocLink href="https://ja.react.dev/learn/sharing-state-between-components">react.dev：コンポーネント間で state を共有する</DocLink>（「各 state の信頼できる唯一の情報源」の節が、今日の「1か所にしかない」）
+- <DocLink href="https://ja.react.dev/learn/responding-to-events">react.dev：イベントへの応答</DocLink>（イベントハンドラの書き方と、props で渡すときの決まり）
+- <DocLink href="https://ja.react.dev/learn/keeping-components-pure">react.dev：コンポーネントを純粋に保つ</DocLink>（「純粋性：コンポーネントとは数式のようなもの」の節）
+- <DocLink href="https://ja.react.dev/learn/thinking-in-react">react.dev：React の流儀</DocLink>（ステップ3〜5が、今日の「state を決める順番」）
+- <DocLink href="https://ja.react.dev/reference/rules/rules-of-hooks">react.dev：フックのルール</DocLink>（今日の2つの決まり）
+
+## 今日の一文
+
+今日わかったことを、自分の言葉で1文にしてください。書けたら、例と見比べます。
+
+<Reveal label="例を見る">
+
+ほかの値から計算できるものは state にせず、レンダーのたびに計算する。state は、それを必要とするコンポーネントの共通の親に、1か所だけ置く。
+
+</Reveal>
+
+## 次回の仕様変更予告
+
+田中さんから、次の依頼が来ます。
+「一覧から備品を選んで、借りる人と、借りる期間（いつから・いつまで）を入力して、貸出を登録できるようにしてください。入力がおかしいときは、どこがおかしいかを教えてほしいです。」
+
+<Question>
+フォームには、利用者が好きな文字を入力できます。日付の欄が空のまま送信されたり、「いつまで」が「いつから」より前だったりするかもしれません。
+入力された値が正しいかどうかは、どこで、どうやって確かめることになるでしょうか。
+</Question>
