@@ -3,6 +3,7 @@ dist/
 *.tsbuildinfo
 __screenshots__/
 .vitest-attachments/
+.vitest/
 
 #Ignore vscode AI rules
 .github/instructions/codacy.instructions.md

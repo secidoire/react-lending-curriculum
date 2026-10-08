@@ -17,6 +17,7 @@
     "lint": "eslint .",
     "test": "vitest run --project node",
     "test:browser": "vitest run --project browser",
+    "test:starter": "vitest run --mode starter",
     "test:watch": "vitest"
   },
   "devDependencies": {

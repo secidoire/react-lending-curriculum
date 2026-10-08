@@ -1,0 +1,32 @@
+body {
+  margin: 2rem;
+  font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  line-height: 1.8;
+}
+
+form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+input,
+select,
+button {
+  padding: 0.25rem 0.5rem;
+  font: inherit;
+}
+
+table {
+  margin-top: 0.5rem;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #999;
+  text-align: left;
+}

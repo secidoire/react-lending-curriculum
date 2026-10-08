@@ -1,0 +1,292 @@
+export const title = '素のJSで貸出一覧'
+
+## 前回の予告を確かめよう
+
+前回のページは、開いたときに1回だけ件数を数えて「3件の貸出があります」と表示していました。
+今回は、この一覧に追加・削除・絞り込みが入ります。
+
+<Question>
+追加と削除ができるようになったら、件数を数え直すコードは、どこに何か所書くことになりそうですか。
+予想した数を、口に出してから先へ進みます。
+</Question>
+
+## この一覧、どこがおかしい？
+
+先に、できあがったように見える一覧を触ってみます。コードは開かず、画面の操作だけで調べます。
+
+```bash
+npx vite handson/part0/0-2-vanilla-list/bad-examples/list-with-bugs
+```
+
+表示されたURLを開くと、追加も、削除も、「貸出中のみ表示」も、ひととおり動いているように見えます。
+ところが、この一覧には、画面の表示が食い違う操作が2つあります。
+
+<Question>
+5分で、画面の表示が食い違う操作を2つ見つけてください。
+見つけたら、「何をして、何が、どうおかしくなったか」を言葉にします。
+</Question>
+
+<Reveal label="見つからなかったら開く">
+
+- どれかの行を削除して、表の上の件数を見る。
+- 「貸出中のみ表示」にチェックを入れたまま、状態を「予約中」にして追加する。
+
+</Reveal>
+
+## なぜ、押したところ以外がずれる？
+
+どちらの操作でも、押したボタンの仕事（行を消す・行を足す）は正しく行われていました。
+
+<Question>
+ずれたのは、どちらも「押したところとは別の場所」でした。
+この2つに共通している原因を、予想してください。
+</Question>
+
+## お題
+
+同じ一覧を、自分の手で作ります。作りながら、さっきの2つと同じことが自分のコードで起きないかを確かめます。
+
+- お題：`handson/part0/0-2-vanilla-list/README.md`
+- ふり返りを書き込むファイル：`handson/part0/0-2-vanilla-list/starter/notes.md`
+
+## 操作のたびに、何か所を直した？
+
+お題の6で、操作ごとに書き換えているものを表に書き出しました。
+
+<Question>
+書き換えているものがいちばん多い操作は、どれでしたか。
+件数の表示を足したとき、書き換えたのは何か所でしたか。最初の予想と比べてください。
+</Question>
+
+<Reveal>
+
+操作ごとに、変わったところだけDOMを直す書き方を、ここではA版と呼びます（`solution/a-manual/`）。
+A版では、たとえば「追加」のときに直す場所が4つあります。印の行が、その4つです。
+
+```js {1,3,4,5}
+loans.push(loan);
+const row = createRow(loan);
+row.hidden = isHiddenByFilter(loan.status);
+tbody.append(row);
+updateSummary();
+```
+
+<svg className="diagram" viewBox="0 0 760 235" role="img" aria-labelledby="manual-title">
+  <title id="manual-title">操作ごとにDOMを直す書き方では、追加は4か所、削除は3か所、絞り込みは1か所を、それぞれ自分で直す</title>
+  <defs>
+    <marker id="manual-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="2">
+    <rect x="10" y="20" width="120" height="40" rx="4" />
+    <rect x="10" y="95" width="120" height="40" rx="4" />
+    <rect x="10" y="170" width="120" height="40" rx="4" />
+    <rect x="560" y="10" width="190" height="40" rx="4" />
+    <rect x="560" y="65" width="190" height="40" rx="4" />
+    <rect x="560" y="120" width="190" height="40" rx="4" />
+    <rect x="560" y="175" width="190" height="40" rx="4" />
+  </g>
+  <g fill="none" stroke="#1f2328" strokeWidth="1.5" markerEnd="url(#manual-arrow)">
+    <path d="M130 40 L558 30" />
+    <path d="M130 40 L558 85" />
+    <path d="M130 40 L558 140" />
+    <path d="M130 40 L558 195" />
+    <path d="M130 115 L558 30" />
+    <path d="M130 115 L558 85" />
+    <path d="M130 115 L558 195" />
+    <path d="M130 190 L558 140" />
+  </g>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="70" y="46">追加</text>
+    <text x="70" y="121">削除</text>
+    <text x="70" y="196">絞り込み</text>
+    <text x="655" y="36">配列 loans</text>
+    <text x="655" y="91">表の行を足す・消す</text>
+    <text x="655" y="146">行を隠す・見せる</text>
+    <text x="655" y="201">件数の表示</text>
+    <text x="300" y="228">矢印：その操作のときに直す場所</text>
+  </g>
+</svg>
+
+<p className="caption">図：A版。矢印の1本1本が、書き忘れてはいけないコード。</p>
+
+貸出の一覧は、配列 `loans` の中にあります。同じ一覧が、表の行としてDOMの中にもあります。
+同じ情報が2か所にあるので、操作のたびに両方を直す必要があり、片方を直し忘れると画面がずれます。
+
+最初に触った一覧の2つのバグは、どちらもこの直し忘れでした。削除のときに件数を直していないことと、追加のときに絞り込みを見ていないことです。
+件数の表示を足すとき、A版で書き換えるのは3か所（最初の表示・追加・削除）です。
+
+画面を決めるデータを<Term>状態</Term>、同じ状態を2か所に持つことを<Term>二重管理</Term>と呼びます。
+
+</Reveal>
+
+## 直す場所を、1か所にできる？
+
+A版では、機能を1つ足すたびに、図の矢印が増えていきます。
+
+<Question>
+矢印を増やさずに済む書き方はないでしょうか。
+ヒント：操作のたびに「変わったところ」を探すのをやめたら、どう書けるでしょうか。
+</Question>
+
+<Reveal>
+
+操作ではデータだけを直し、画面はデータから毎回すべて作り直します。これをB版と呼びます（`solution/b-render/`）。
+
+```js {2,3}
+deleteButton.addEventListener('click', () => {
+  loans = loans.filter((other) => other !== loan);
+  render();
+});
+```
+
+どの操作も、この形です。データ（`loans` と、絞り込み中かどうかの `lentOnly`）を直して、`render()` を呼びます。
+
+```js {5,6}
+function render() {
+  const lentLoans = loans.filter((loan) => loan.status === 'lent');
+  const visibleLoans = lentOnly ? lentLoans : loans;
+
+  summary.textContent = `全${loans.length}件・貸出中${lentLoans.length}件`;
+  tbody.replaceChildren(...visibleLoans.map(createRow));
+}
+```
+
+<svg className="diagram" viewBox="0 0 760 200" role="img" aria-labelledby="render-title">
+  <title id="render-title">全部作り直す書き方では、どの操作もデータだけを直し、画面は render がデータから作り直す</title>
+  <defs>
+    <marker id="render-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="2">
+    <rect x="10" y="10" width="120" height="40" rx="4" />
+    <rect x="10" y="80" width="120" height="40" rx="4" />
+    <rect x="10" y="150" width="120" height="40" rx="4" />
+    <rect x="260" y="60" width="170" height="80" rx="4" />
+    <rect x="580" y="60" width="170" height="80" rx="4" />
+  </g>
+  <g fill="none" stroke="#1f2328" strokeWidth="1.5" markerEnd="url(#render-arrow)">
+    <path d="M130 30 L258 85" />
+    <path d="M130 100 L258 100" />
+    <path d="M130 170 L258 115" />
+    <path d="M430 100 L578 100" />
+  </g>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="70" y="36">追加</text>
+    <text x="70" y="106">削除</text>
+    <text x="70" y="176">絞り込み</text>
+    <text x="345" y="92">データ</text>
+    <text x="345" y="120">loans / lentOnly</text>
+    <text x="665" y="92">画面</text>
+    <text x="665" y="120">行・件数</text>
+    <text x="205" y="20">データだけを直す</text>
+    <text x="504" y="90">render()</text>
+    <text x="504" y="124">全部作り直す</text>
+  </g>
+</svg>
+
+<p className="caption">図：B版。操作から画面へ直接のびる矢印がない。</p>
+
+絞り込みも件数も、`render()` がいまのデータから毎回計算します。「この操作のときは、どこを直すんだっけ」と覚えておく必要がなくなります。
+件数の表示を足すときに書き換えるのは、`render()` の中の1か所だけです。
+
+</Reveal>
+
+## 全部作り直すと、何が失われる？
+
+B版を開いて、次の順に操作します。
+
+```bash
+npx vite handson/part0/0-2-vanilla-list/solution/b-render
+```
+
+1. 「リーダブルコード」のメモ欄に、何か文字を入力する。
+2. 「プロジェクター」の行の「削除」を押す。
+
+<Question>
+メモ欄はどうなりましたか。A版（`solution/a-manual/`、または自分のコード）で同じ操作をすると、どうなりますか。
+違いが出る理由を、前回（0-1）の最後の問い（`innerHTML` でまるごと作り直すと何が失われる？）と結びつけて説明してください。
+</Question>
+
+<Reveal>
+
+B版では、入力した文字が消えます。A版では残ります。
+
+`render()` は、行をすべて捨てて、新しい行を作り直しています。メモ欄も、見た目が同じだけの新しい入力欄に置き換わりました。
+入力中の文字は、データ（`loans`）には入っておらず、DOMの要素だけが持っていました。だから、要素を捨てると一緒に消えます。
+
+これが、前回の最後の問いの答えです。どの入力欄にカーソルがあるか（フォーカス）も、同じようにDOMの要素だけが持っています。次回、入力している最中に画面が作り直される場面で確かめます。
+
+</Reveal>
+
+## 模範解答の要点
+
+<Question>
+レビューの問いです。「返却期限を過ぎた貸出に『延滞』と表示する」という依頼が来たら、A版とB版で、それぞれ何か所を直すことになるでしょうか。
+</Question>
+
+<Reveal label="模範解答と要点を見る">
+
+模範解答は2つあります。どちらもテストは全件通ります。
+
+| | A版 `solution/a-manual/` | B版 `solution/b-render/` |
+|---|---|---|
+| 書き方 | 操作ごとに、変わったところだけDOMを直す | 操作ではデータだけ直し、画面は全部作り直す |
+| 表示を足すときに書き換える場所 | その表示に関わる操作すべて | `render()` の中の1か所 |
+| 起きやすいバグ | 直し忘れで、データと画面がずれる | `render()` を呼び忘れない限り、ずれない |
+| 失うもの | なし | DOMの要素だけが持っていたもの（入力中の文字など） |
+
+延滞の表示を足す場合、B版は `render()` が呼ぶ「行を作るところ」の1か所に書けば、どの操作のあとにも反映されます。A版は、行を作るところに加えて、表示を直しているほかの場所もすべて見直すことになります。
+
+どちらの版にも残る問いがあります。延滞は、誰も操作しなくても、時間が経つだけで起きます。そのとき、誰が画面を直すのでしょうか。これは先の回で扱います。
+
+今日の要点は2つです。
+
+- 同じ状態をデータとDOMの2か所に持つと、片方の直し忘れで画面がずれる。
+- 一覧のデータを1か所にして画面を全部作り直せば、直し忘れを考えなくて済む。代わりに、DOMの要素だけが持っていたもの（入力中の文字など）が消える。
+
+</Reveal>
+
+## よくある誤解
+
+<Misconception wrong="DOMのAPIが古くて書きにくいから、バグが出る。">
+
+書きやすいAPIに替えても、直し忘れは起きます。問題はAPIではなく、同じ状態がデータとDOMの2か所にあることです。
+
+</Misconception>
+
+<Misconception wrong="気をつけて書けば、直し忘れは防げる。">
+
+今日の2つは、気をつければ防げます。けれども、直す場所は最大で「操作の数 × 表示の数」まで増えていきます。機能が増えるほど、全部を覚えておくことはできなくなります。
+
+</Misconception>
+
+## 公式ドキュメント
+
+- <DocLink href="https://developer.mozilla.org/ja/docs/Web/API/Document/createElement">MDN：Document.createElement()</DocLink>（要素を作る）
+- <DocLink href="https://developer.mozilla.org/ja/docs/Web/API/Element/replaceChildren">MDN：Element.replaceChildren()</DocLink>（子をまとめて入れ替える。B版の `render()` で使っている）
+- <DocLink href="https://react.dev/learn/reacting-to-input-with-state">react.dev：Reacting to Input with State</DocLink>（今日のA版とB版の違いを、Reactの側から説明したページ。第1部に入ってから読み返す）
+
+## 今日の一文
+
+今日わかったことを、自分の言葉で1文にして `notes.md` の最後に書いてください。
+
+<Reveal label="例を見る">
+
+同じ情報をデータとDOMの2か所に持つと、片方の直し忘れで画面がずれる。
+
+</Reveal>
+
+## 次回の仕様変更予告
+
+田中さんから、B版の一覧について次の依頼が来ます。
+「メモを書いている途中でほかの行を消したら、書きかけのメモが消えました。消えないようにしてください。」
+
+次回は、B版の「データだけを直す」書き方を変えずに、この依頼に応えます。
+
+<Question>
+「プロジェクター」の行を削除する前と後の画面を見比べてください。
+DOMの中で、本当に変える必要があったのはどこでしょうか。変えなくてよかったのはどこでしょうか。
+</Question>

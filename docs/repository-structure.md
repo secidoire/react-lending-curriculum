@@ -34,6 +34,8 @@ react-lending-curriculum/
 ## 運用ルール
 - ジュニアは `handson/part1/my-app/` に累積的に書いていく。前回のコードが仕様変更に耐えるかを確かめることが、この教材の核になる。
 - `sessions/NN/tests/` は my-app と solution の両方に対して実行できる受け入れテストにする。
+- テストは既定で `solution/` を対象にする（`npm run test` / `npm run test:browser`）。`npm run test:starter -- <お題のパス>` を使うと、同じテストを `starter/`（第0部でジュニアが書く場所）に対して実行する。切り替えは Vite の mode（`import.meta.env.MODE === 'starter'`）で行う。
+- Reactを使わずDOMを触るコードのテストは `*.browser.test.ts` とし、Browser Modeで実行する。
 - `explainer/src/shared-mini-react/` は `handson/part0/0-3-mini-react/steps/07/solution` と同じ内容に保つ。差分が出たら handson 側を正とする（同期を確かめるテストを置く）。
 
 ## 第1部 第7回の到達形（handson/part1/my-app/src/）

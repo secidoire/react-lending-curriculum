@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>備品の貸出一覧</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <h1>備品の貸出一覧</h1>
+
+    <p id="count">（件数を数えています）
+    <table id="loan-table">
+      <tr><th>備品</th><th>借りている人</th><th>状態</th></tr>
+      <tr class="loan"><td>リーダブルコード</td><td>佐藤</td><td>貸出中</td></tr>
+      <tr class="loan"><td>プロジェクター</td><td>鈴木</td><td>予約中</td></tr>
+      <tr class="loan"><td>HDMIケーブル</td><td>高橋</td><td>返却済</td></tr>
+    </table>
+
+    <h2>実験A：色と幅</h2>
+    <button type="button" id="change-color">1行目の色を変える</button>
+    <button type="button" id="change-width">備品の列の幅を変える</button>
+
+    <h2>実験B：1000行を追加する</h2>
+    <button type="button" id="add-one-by-one">1行ずつ追加</button>
+    <button type="button" id="add-with-fragment">まとめて追加</button>
+    <button type="button" id="add-with-layout-read">1行ずつ追加し、毎回高さを読む</button>
+    <button type="button" id="clear">クリア</button>
+    <p id="result">ボタンを押すと、ここにかかった時間が出ます。</p>
+    <table id="big-table">
+      <tbody></tbody>
+    </table>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

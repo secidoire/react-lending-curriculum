@@ -1,0 +1,327 @@
+:root {
+  --text: #1f2328;
+  --muted: #57606a;
+  --line: #d0d7de;
+  --bg: #ffffff;
+  --bg-soft: #f6f8fa;
+  --accent: #0b5cad;
+  --question: #0b5cad;
+  --warning: #9a3412;
+  --answer: #1a7f37;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background: var(--bg);
+  font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+a {
+  color: var(--accent);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 枠：ナビゲーションと本文 */
+.layout {
+  display: flex;
+  align-items: flex-start;
+}
+
+/* 発表モード：文字を1.25倍にする。以降の大きさは em で書き、ここに追従させる。 */
+.layout.present {
+  font-size: 20px;
+}
+
+.session-nav {
+  position: sticky;
+  top: 0;
+  flex: 0 0 17em;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 1.5em 1em;
+  border-right: 1px solid var(--line);
+  background: var(--bg-soft);
+  font-size: 0.875em;
+}
+
+.site-title {
+  display: block;
+  margin-bottom: 1em;
+  color: var(--text);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.session-links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.session-links a {
+  display: block;
+  padding: 0.25em 0.5em;
+  border-left: 3px solid transparent;
+  text-decoration: none;
+}
+
+.session-links a[aria-current='page'] {
+  border-left-color: var(--accent);
+  background: var(--bg);
+  font-weight: bold;
+}
+
+.session-id {
+  color: var(--muted);
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.875em;
+}
+
+.content {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: calc(760px + 4em);
+  margin: 0 auto;
+  padding: 1.5em 2em 6em;
+}
+
+.layout.present .content {
+  max-width: calc(950px + 4em);
+}
+
+.mode-switch {
+  margin: 0;
+  font-size: 0.875em;
+  text-align: right;
+}
+
+h1 {
+  margin: 0.5em 0 1em;
+  font-size: 1.75em;
+  line-height: 1.4;
+}
+
+h2 {
+  margin: 2.5em 0 0.75em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--line);
+  font-size: 1.375em;
+  line-height: 1.5;
+}
+
+h3 {
+  margin: 2em 0 0.5em;
+  font-size: 1.125em;
+}
+
+/* コード */
+code {
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  background: var(--bg-soft);
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.9em;
+}
+
+pre {
+  overflow-x: auto;
+  padding: 1em 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  line-height: 1.6;
+}
+
+pre code {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  padding: 0;
+  background: none;
+}
+
+pre .line {
+  display: inline-block;
+  width: 100%;
+  padding: 0 1em;
+  border-left: 4px solid transparent;
+}
+
+/* 行ハイライト：背景色だけでなく左の線でも示す */
+pre .line.highlighted {
+  border-left-color: var(--accent);
+  background: #ddf4ff;
+}
+
+/* 表 */
+table {
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.4em 0.8em;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+th {
+  background: var(--bg-soft);
+}
+
+/* 図 */
+svg.diagram {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 1em 0 0.25em;
+  font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+}
+
+.caption {
+  margin-top: 0;
+  color: var(--muted);
+  font-size: 0.875em;
+  text-align: center;
+}
+
+/* 問い・誤解・実行結果の枠。種類は色だけでなく、ラベルと線の種類でも区別する。 */
+.box {
+  margin: 1.5em 0;
+  padding: 0.75em 1.25em;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+}
+
+.box > :last-child,
+.reveal-body > :last-child,
+.misconception-right > :last-child {
+  margin-bottom: 0;
+}
+
+.box-label {
+  margin: 0 0 0.25em;
+  font-size: 0.875em;
+  font-weight: bold;
+}
+
+.question {
+  border-color: var(--question);
+}
+
+.question .box-label {
+  color: var(--question);
+}
+
+.misconception {
+  border-style: dashed;
+  border-color: var(--warning);
+}
+
+.misconception .box-label,
+.misconception-mark {
+  color: var(--warning);
+  font-weight: bold;
+}
+
+.misconception-wrong {
+  margin: 0.25em 0;
+  text-decoration: line-through;
+  text-decoration-color: var(--warning);
+}
+
+.misconception-wrong .misconception-mark {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.misconception-right > p:first-of-type {
+  display: inline;
+}
+
+.preview {
+  border-style: dotted;
+  border-color: var(--muted);
+}
+
+/* 答え */
+.reveal {
+  margin: 1.5em 0;
+  border: 2px double var(--answer);
+  border-radius: 6px;
+}
+
+.reveal > summary {
+  padding: 0.5em 1.25em;
+  color: var(--answer);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.reveal-body {
+  padding: 0 1.25em 0.75em;
+}
+
+/* 段階表示 */
+.steps-next {
+  margin: 0.5em 0 1.5em;
+  padding: 0.5em 1.25em;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--accent);
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* 用語 */
+.term {
+  border-bottom: 2px dotted var(--muted);
+  font-style: normal;
+}
+
+.term-list {
+  margin-top: 4em;
+}
+
+.term-list ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  padding: 0;
+  list-style: none;
+}
+
+.term-list li {
+  padding: 0 0.75em;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+@media (max-width: 800px) {
+  .layout {
+    display: block;
+  }
+
+  .session-nav {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+}

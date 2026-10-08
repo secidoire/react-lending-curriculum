@@ -1,0 +1,20 @@
+{
+  "name": "explainer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@mdx-js/rollup": "3.1.1",
+    "@shikijs/rehype": "4.5.0",
+    "@types/mdx": "2.0.14"
+  }
+}

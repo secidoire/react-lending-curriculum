@@ -31,9 +31,19 @@ export default defineConfig([
     languageOptions: { globals: globals.browser },
   },
 
+  // starter には、引数だけ決めて中身が未実装の関数がある。
+  {
+    files: ['handson/**/starter/**/*.{js,jsx}'],
+    rules: { 'no-unused-vars': ['error', { args: 'none' }] },
+  },
+  {
+    files: ['handson/**/starter/**/*.{ts,tsx}'],
+    rules: { '@typescript-eslint/no-unused-vars': ['error', { args: 'none' }] },
+  },
+
   // Node で動く設定ファイル
   {
-    files: ['*.config.{js,ts}', '**/vite.config.ts', '**/vitest.config.ts'],
+    files: ['*.config.{js,ts}', '**/*.config.ts'],
     languageOptions: { globals: globals.node },
   },
 ]);

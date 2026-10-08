@@ -1,0 +1,272 @@
+export const title = 'ブラウザとDOM'
+
+## 最初に予想しよう
+
+初回なので、振り返る前回のコードはまだありません。
+代わりに、これから何度も戻ってくる問いに、予想を立てておきます。
+
+<Question>
+`index.html` をエディタで書き換えずに、画面に出ている文字を変えることはできるでしょうか。
+できるとしたら、そのとき `index.html` の中身はどうなっているでしょうか。
+</Question>
+
+## ソースと検証ツール、どちらが本物？
+
+総務の田中さんから、貸出一覧のページについて相談が来ました。
+「『ページのソースを表示』で見たHTMLと、検証ツールで見えるHTMLが違うんです。どっちが本物ですか？」
+
+<Steps>
+
+`index.html` には、こう書いてあります。
+
+```html
+<p id="count">（件数を数えています）
+<table id="loan-table">
+  <tr><th>備品</th><th>借りている人</th><th>状態</th></tr>
+  <tr class="loan"><td>リーダブルコード</td><td>佐藤</td><td>貸出中</td></tr>
+  <tr class="loan"><td>プロジェクター</td><td>鈴木</td><td>予約中</td></tr>
+  <tr class="loan"><td>HDMIケーブル</td><td>高橋</td><td>返却済</td></tr>
+</table>
+```
+
+同じページを検証ツール（DevTools）の Elements パネルで見ると、こうなっています。
+
+```html {1,3,8}
+<p id="count">3件の貸出があります</p>
+<table id="loan-table">
+  <tbody>
+    <tr><th>備品</th><th>借りている人</th><th>状態</th></tr>
+    <tr class="loan"><td>リーダブルコード</td><td>佐藤</td><td>貸出中</td></tr>
+    <tr class="loan"><td>プロジェクター</td><td>鈴木</td><td>予約中</td></tr>
+    <tr class="loan"><td>HDMIケーブル</td><td>高橋</td><td>返却済</td></tr>
+  </tbody>
+</table>
+```
+
+<Question>
+印の付いた行は、`index.html` と違っています。件数の文字、`</p>`、`<tbody>` は、誰が、いつ足したのでしょうか。
+</Question>
+
+</Steps>
+
+## 検証ツールで直したのに、なぜ元に戻る？
+
+田中さんの相談には続きがあります。
+「検証ツールで『佐藤』を『佐藤（総務）』に直したのに、リロードしたら元に戻っていました。」
+
+<Question>
+田中さんが書き換えたものは、何だったのでしょうか。それは、どこにあるものでしょうか。
+</Question>
+
+## お題
+
+ここから先は、自分の手で確かめてから読みます。
+
+- お題：`handson/part0/0-1-browser-dom/README.md`
+- 観察を書き込むファイル：`handson/part0/0-1-browser-dom/starter/notes.md`
+
+## ブラウザはHTMLをどうやって画面にする？
+
+ブラウザは、HTMLファイルをそのまま画面に貼り付けているわけではありません。
+ファイルを読んでから画面に出すまでに、次の段階を順に進みます。
+
+<svg className="diagram" viewBox="0 0 760 410" role="img" aria-labelledby="pipeline-title">
+  <title id="pipeline-title">ブラウザは、ファイルをパースしてDOMとCSSOMを作り、そこからスタイル計算・レイアウト・ペイント・コンポジットの順に進んで画面を作る</title>
+  <defs>
+    <marker id="pipeline-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <g fill="#f6f8fa" stroke="#1f2328" strokeWidth="1.5" strokeDasharray="5 4">
+    <rect x="10" y="20" width="130" height="44" rx="4" />
+    <rect x="400" y="20" width="130" height="44" rx="4" />
+  </g>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="2">
+    <rect x="240" y="20" width="100" height="44" rx="4" />
+    <rect x="630" y="20" width="100" height="44" rx="4" />
+    <rect x="215" y="130" width="150" height="44" rx="4" />
+    <rect x="215" y="204" width="150" height="44" rx="4" />
+    <rect x="215" y="278" width="150" height="44" rx="4" />
+    <rect x="215" y="352" width="150" height="44" rx="4" />
+  </g>
+  <g fill="none" stroke="#1f2328" strokeWidth="1.5" markerEnd="url(#pipeline-arrow)">
+    <path d="M140 42 H238" />
+    <path d="M530 42 H628" />
+    <path d="M290 64 V128" />
+    <path d="M680 64 V100 H330 V128" />
+    <path d="M290 174 V202" />
+    <path d="M290 248 V276" />
+    <path d="M290 322 V350" />
+  </g>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="75" y="48">index.html</text>
+    <text x="465" y="48">style.css</text>
+    <text x="290" y="48">DOM</text>
+    <text x="680" y="48">CSSOM</text>
+    <text x="189" y="34">パース</text>
+    <text x="579" y="34">パース</text>
+    <text x="290" y="158">スタイル計算</text>
+    <text x="290" y="232">レイアウト</text>
+    <text x="290" y="306">ペイント</text>
+    <text x="290" y="380">コンポジット</text>
+  </g>
+  <g fontSize="16" fill="#1f2328">
+    <text x="385" y="158">どの要素に、どのCSSが当たるかを決める</text>
+    <text x="385" y="232">各要素の大きさと位置を決める</text>
+    <text x="385" y="306">色・文字・枠線を描く</text>
+    <text x="385" y="380">描いたものを重ねて、画面に出す</text>
+  </g>
+</svg>
+
+<p className="caption">図：ファイルから画面まで。点線の箱はファイル、実線の箱はブラウザがメモリの中に作るもの・行う計算。</p>
+
+最初に、HTMLの文字列を先頭から読み、入れ子になった要素を親子の関係でつないだ木を組み立てます。
+この読み取りを<Term>パース</Term>、できあがった木を<Term>DOM</Term>と呼びます。
+CSSも同じときに読み取られ、どの要素にどんな見た目を当てるかのルールをまとめた<Term>CSSOM</Term>が作られます。
+
+図で縦に並んだ4つは、DOMとCSSOMから画面を作る段階です。
+上から順に<Term>スタイル計算</Term>、<Term>レイアウト</Term>、<Term>ペイント</Term>、<Term>コンポジット</Term>と呼びます。
+
+## 検証ツールが見せているのは、図のどれ？
+
+<Question>
+Elements パネルに出ているのは、図のどの箱でしょうか。「ページのソースを表示」はどの箱でしょうか。
+それが決まると、田中さんの2つの相談に答えられます。
+</Question>
+
+<Reveal>
+
+Elements パネルが見せているのはDOMで、「ページのソースを表示」が見せているのは `index.html` です。この2つは別のものです。
+
+- `<tbody>`：HTMLの決まりでは、表の行は `<tbody>` の中に入ります。書かれていなかったので、パースのときにブラウザが要素を補いました。
+- `</p>`：同じくパースのときに、`<table>` の手前で段落が終わったものとして扱われました。Elements パネルは、できあがった木をHTMLの形に直して見せています。
+- 件数の文字：ページが読み込んでいるJavaScript（`main.js`）が、DOMができたあとに書き換えました。
+- リロードで元に戻る：田中さんが書き換えたのはDOMです。リロードすると、ブラウザは `index.html` をもう一度パースして、DOMを作り直します。
+
+つまり、HTMLファイルはDOMの初期値にすぎません。画面は、ファイルからではなく、DOM（とCSSOM）から作られます。
+
+冒頭の予想の答えも出ました。`index.html` を書き換えなくても、DOMを変更すれば画面の文字は変わります。そのとき `index.html` は1文字も変わっていません。
+
+</Reveal>
+
+## 色と幅で、光る範囲が違うのはなぜ？
+
+Paint flashing は、ペイントし直した範囲を緑に光らせる機能です。色を変えたときは1行だけが、幅を変えたときは表全体が光りました。
+
+DOMやスタイルを変更すると、ブラウザは図の途中の段階から、下に向かってもう一度計算します。
+
+<Question>
+色の変更と幅の変更で、やり直しになる段階はどう違うでしょうか。
+</Question>
+
+<Reveal>
+
+どちらもCSSの変更なので、スタイル計算からやり直しになります。違うのは、その次です。
+
+色を変えても、要素の大きさと位置は変わりません。レイアウトは飛ばせるので、その行をペイントし直すだけで済みます。
+
+幅を変えると、レイアウトもやり直しになります。列の幅が変わると、同じ列のセルや隣の列の位置も変わるので、影響を受けた範囲がすべてペイントし直されます。
+
+変更したときにかかる手間は、「どの段階がやり直しになり、どこまで影響が広がるか」で決まります。
+
+</Reveal>
+
+## 1000行の追加で、1つだけ遅いのはなぜ？
+
+3つの方法は、どれも同じ1000個の行を表に追加しています。
+
+<Question>
+「1行ずつ追加」と「まとめて追加」の差は、予想と比べてどうでしたか。
+「毎回高さを読む」だけが極端に遅いのは、追加のたびに図のどの段階が動いているからでしょうか。
+</Question>
+
+<Reveal>
+
+ブラウザは、DOMを変更されても、その場ではレイアウトを計算しません。次に画面を描くときまで後回しにして、まとめて計算します。
+だから、1行ずつ1000回追加しても、まとめて1回で追加しても、レイアウトの計算は1回で済みます。
+
+ところが `offsetHeight`（要素の高さ）のような値は、最新のレイアウトがないと答えられません。
+変更の直後に読むと、ブラウザはその場でレイアウトを計算します。これを1000回くり返したのが3つ目の方法です。
+
+| 方法 | 表への追加 | レイアウトの計算 | 実測の例 |
+|---|---|---|---|
+| 1行ずつ追加 | 1000回 | 1回 | 約20ms |
+| まとめて追加 | 1回 | 1回 | 約20ms |
+| 1行ずつ追加し、毎回高さを読む | 1000回 | 1000回 | 約800ms |
+
+実測はChromeでの一例で、数値はPCによって変わります。どの方法も、レイアウトの計算が終わるところまでを測っています（`measure.js` が最後にページの高さを読んでいるのは、そのためです）。
+
+3つ目の方法では、行が増えるほど1回のレイアウトの計算も重くなります。それを1000回くり返すので、差は桁違いになります。
+
+</Reveal>
+
+## 模範解答の要点
+
+<Reveal label="模範解答と要点を見る">
+
+「まとめて追加」は、まだ画面につながっていない入れ物（<Term>DocumentFragment</Term>）に行を集めてから、1回で表に追加します。
+今回の実験では、こうしても速くはなりませんでした。「1行ずつ追加」でも、レイアウトの計算は同じ1回だからです。
+
+```js {2,6}
+export function appendWithFragment(tbody, items) {
+  const fragment = document.createDocumentFragment();
+  for (const item of items) {
+    fragment.append(createRow(item));
+  }
+  tbody.append(fragment);
+}
+```
+
+今日の要点は3つです。
+
+- HTMLファイルはDOMの初期値にすぎない。
+- DOMを変更すると、レイアウトやペイントの再計算が走る。どこからやり直すかは、何を変えたかで決まる。
+- 桁違いに遅くなるのは、DOMを変更する回数が多いときではなく、レイアウトの再計算が何度も走るとき。変更と読み取りを交互にくり返すと、そのたびに再計算が走る。
+
+全体は `handson/part0/0-1-browser-dom/solution/` にあります。
+
+</Reveal>
+
+## よくある誤解
+
+<Misconception wrong="DOM操作は常に遅い。">
+
+表への追加は、1000回行っても、レイアウトの計算1回を含めて約20msでした。桁違いに遅くなるのは、レイアウトの再計算が何度も走るときです。変更と読み取りを交互にくり返すと、変更のたびに再計算が走ります。
+
+</Misconception>
+
+<Misconception wrong="Elements パネルで直せば、ファイルも直る。">
+
+Elements パネルで書き換えているのはDOMです。ファイルは変わらないので、リロードすると元に戻ります。
+
+</Misconception>
+
+## 公式ドキュメント
+
+- <DocLink href="https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/How_browsers_work">MDN：Populating the page: how browsers work</DocLink>（パースからコンポジットまでの全体）
+- <DocLink href="https://web.dev/learn/performance/understanding-the-critical-path">web.dev：Understand the critical path</DocLink>（最初の表示までの流れ）
+- <DocLink href="https://web.dev/articles/avoid-large-complex-layouts-and-layout-thrashing">web.dev：Avoid large, complex layouts and layout thrashing</DocLink>（変更と読み取りを交互に行う問題）
+
+## 今日の一文
+
+今日わかったことを、自分の言葉で1文にして `notes.md` の最後に書いてください。
+
+<Reveal label="例を見る">
+
+HTMLファイルはDOMの初期値にすぎず、画面はDOMから作られる。
+
+</Reveal>
+
+## 次回の仕様変更予告
+
+次回は、この貸出一覧に素のJavaScriptで機能を足します。追加・削除・「貸出中のみ」の絞り込みです。
+
+<Question>
+今日のページの「3件の貸出があります」は、ページを開いたときに1回だけ数えたものです。
+行を追加・削除できるようになったら、この表示を正しく保つために、どこにコードを書くことになるでしょうか。
+</Question>
+
+<Question>
+もう1つ、先の回のための問いです。
+`innerHTML` で表を毎回まるごと作り直すことにしたら、画面から何が失われるでしょうか。
+</Question>
