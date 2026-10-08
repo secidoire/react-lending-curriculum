@@ -2,6 +2,7 @@ import * as React from 'react';
 import * as jsxRuntime from 'react/jsx-runtime';
 import * as ReactDomClient from 'react-dom/client';
 import { transform } from 'sucrase';
+import * as zod from 'zod';
 import { z } from 'zod';
 import { moduleName } from './moduleName';
 import type { SandboxFile, SandboxSpec } from './types';
@@ -21,6 +22,7 @@ const LIBRARIES: Record<string, unknown> = {
   react: React,
   'react/jsx-runtime': jsxRuntime,
   'react-dom/client': ReactDomClient,
+  zod,
 };
 
 // 例が export したものは、読者が書き換えたコードの結果なので、型はわからない。使う前に形を確かめる。

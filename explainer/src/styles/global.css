@@ -715,3 +715,30 @@ pre.pane {
   background: #ddf4ff;
   font-weight: bold;
 }
+
+/* 第3回：貸出フォーム */
+.lend-form {
+  display: grid;
+  gap: 0.5em;
+  max-width: 26em;
+  margin: 0.5em 0 1em;
+}
+
+.form-field {
+  display: grid;
+  grid-template-columns: 6em 1fr;
+  gap: 0.1em 0.5em;
+  align-items: center;
+}
+
+.field-error {
+  grid-column: 2;
+  margin: 0;
+  color: var(--warning);
+  font-size: 0.875em;
+  font-weight: bold;
+}
+
+.field-error::before {
+  content: '⚠ ';
+}
