@@ -631,3 +631,43 @@ pre.pane {
   box-shadow: inset 4px 0 0 #bf8700;
   vertical-align: middle;
 }
+
+/* デモ(c) */
+.ticker-count {
+  margin: 0.25em 0;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.demo-code {
+  max-height: 22em;
+  margin: 0.5em 0;
+  padding: 0.5em 0.75em;
+  font-size: 0.75em;
+}
+
+.render-cards,
+.timer-list {
+  margin: 0.5em 0;
+  padding: 0;
+  list-style: none;
+}
+
+.render-card {
+  margin: 0.25em 0;
+  padding: 0.25em 0.75em;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.render-card.referenced {
+  border: 3px solid var(--accent);
+}
+
+.render-card-mark {
+  margin-left: 0.75em;
+  color: var(--accent);
+  font-size: 0.875em;
+  font-weight: bold;
+}

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { page } from 'vitest/browser';
 import { runSandbox, startSandbox } from './runSandbox';
 
 describe('runSandbox', () => {
@@ -49,6 +50,42 @@ describe('startSandbox', () => {
     startSandbox({ entry: 'main.ts', start: 'start' }, files, root);
 
     expect(root.textContent).toBe('動いた');
+  });
+
+  it('start 関数が後片づけの関数を返したら、それをそのまま返す', () => {
+    const root = document.createElement('div');
+    const files = [
+      {
+        name: 'main.ts',
+        code: "export function start(root: HTMLElement) { root.append('動作中'); return () => { root.textContent = '片づけた'; }; }",
+      },
+    ];
+
+    const cleanup = startSandbox({ entry: 'main.ts', start: 'start' }, files, root);
+    expect(root.textContent).toBe('動作中');
+
+    cleanup();
+    expect(root.textContent).toBe('片づけた');
+  });
+
+  it('component を指定すると、Reactのコンポーネントとして描画し、後片づけで取り除く', async () => {
+    const root = document.createElement('div');
+    document.body.replaceChildren(root);
+    const files = [
+      {
+        name: 'App.tsx',
+        code: "import { useState } from 'react';\nexport function App() { const [count, setCount] = useState(0); return <button onClick={() => setCount(count + 1)}>{count}回</button>; }",
+      },
+    ];
+
+    const cleanup = startSandbox({ entry: 'App.tsx', component: 'App' }, files, root);
+    await expect.element(page.getByRole('button', { name: '0回' })).toBeVisible();
+
+    await page.getByRole('button', { name: '0回' }).click();
+    await expect.element(page.getByRole('button', { name: '1回' })).toBeVisible();
+
+    cleanup();
+    expect(root.textContent).toBe('');
   });
 
   it('start 関数が無いと、わかる言葉で止まる', () => {

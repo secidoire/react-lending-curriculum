@@ -11,6 +11,10 @@ type Props = {
 // 入力が止まってから実行するまでの待ち時間。1文字打つたびに実行しないようにする。
 const RUN_DELAY_MS = 400;
 
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export function SandboxPreview({ files, spec }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -21,16 +25,22 @@ export function SandboxPreview({ files, spec }: Props) {
     const root = rootRef.current;
     if (root === null) return;
 
+    let cleanup = () => {};
     const timer = setTimeout(() => {
       try {
-        startSandbox(spec, files, root);
+        cleanup = startSandbox(spec, files, root, (caught) => setError(messageOf(caught)));
         setError(null);
       } catch (caught) {
         root.replaceChildren();
-        setError(caught instanceof Error ? caught.message : String(caught));
+        setError(messageOf(caught));
       }
     }, RUN_DELAY_MS);
-    return () => clearTimeout(timer);
+
+    // 例が動かしたままのもの（タイマーなど）を止めてから、次の実行に移る。
+    return () => {
+      clearTimeout(timer);
+      cleanup();
+    };
   }, [files, spec]);
 
   return (

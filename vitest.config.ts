@@ -37,6 +37,9 @@ export default defineConfig({
             'sucrase',
             'codemirror',
             '@codemirror/lang-javascript',
+            '@codemirror/state',
+            '@codemirror/view',
+            'react-dom/client',
           ],
         },
         test: {

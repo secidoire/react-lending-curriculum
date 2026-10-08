@@ -56,12 +56,12 @@
 | 公式ページ | スラッグ | 扱う回 | 状態 |
 |---|---|---|---|
 | イベントへの応答 | `responding-to-events` | 第2回（入力）・第3回（送信と既定の動作の抑止） | 未 |
-| state：コンポーネントのメモリ | `state-a-components-memory` | 0-4・第2回・発展A-1 | 未 |
+| state：コンポーネントのメモリ | `state-a-components-memory` | 0-4（`useState` の最小の例）・第2回・発展A-1 | 0-4で一部 |
 | レンダーとコミット | `render-and-commit` | 0-3・第1回・発展A-2 | 0-3済み |
-| state はスナップショットである | `state-as-a-snapshot` | 0-4・発展A-1 | 未 |
-| 一連の state の更新をキューに入れる | `queueing-a-series-of-state-updates` | 0-4・発展A-1 | 未 |
-| state 内のオブジェクトの更新 | `updating-objects-in-state` | 0-4・第4回 | 未 |
-| state 内の配列の更新 | `updating-arrays-in-state` | 0-4・第4回 | 未 |
+| state はスナップショットである | `state-as-a-snapshot` | 0-4・発展A-1 | 0-4済み |
+| 一連の state の更新をキューに入れる | `queueing-a-series-of-state-updates` | 0-4（関数型更新）・発展A-1（まとめて処理される仕組み） | 0-4で一部 |
+| state 内のオブジェクトの更新 | `updating-objects-in-state` | 0-4・第4回 | 0-4済み |
+| state 内の配列の更新 | `updating-arrays-in-state` | 0-4・第4回 | 0-4済み |
 
 ### state の管理
 | 公式ページ | スラッグ | 扱う回 | 状態 |
@@ -81,9 +81,9 @@
 | ref で DOM を操作する | `manipulating-the-dom-with-refs` | 第3回（入力エラーのとき、その欄にフォーカスを移す） | 未 |
 | エフェクトを使って同期を行う | `synchronizing-with-effects` | 第5回 | 未 |
 | そのエフェクトは不要かも | `you-might-not-need-an-effect` | 第2回・第5回 | 未 |
-| リアクティブなエフェクトのライフサイクル | `lifecycle-of-reactive-effects` | 0-4・第5回 | 未 |
-| イベントとエフェクトを切り離す | `separating-events-from-effects` | 0-4（デモc）・第5回 | 未 |
-| エフェクトから依存値を取り除く | `removing-effect-dependencies` | 0-4・第5回 | 未 |
+| リアクティブなエフェクトのライフサイクル | `lifecycle-of-reactive-effects` | 第5回（0-4では `useEffect` を読める最小限だけ） | 未 |
+| イベントとエフェクトを切り離す | `separating-events-from-effects` | 第5回（0-4のデモ(c)で useEffectEvent版を見せるだけ） | 未 |
+| エフェクトから依存値を取り除く | `removing-effect-dependencies` | 第5回（0-4のデモ(c)で関数型更新を扱った） | 未 |
 | カスタムフックでロジックを再利用する | `reusing-logic-with-custom-hooks` | 第6回 | 未 |
 
 ## 3. React のルール（`https://ja.react.dev/reference/rules`）
@@ -100,7 +100,7 @@
 
 | フック | 重要度 | 扱う回 | 状態 |
 |---|---|---|---|
-| useState | 必須 | 0-4・第2回・発展A-1 | 未 |
+| useState | 必須 | 0-4・第2回・発展A-1 | 0-4で一部 |
 | useReducer | 必須 | 第4回 | 未 |
 | useContext | 必須 | 第6回 | 未 |
 | useRef | 必須 | 第3回（DOM）・第5回（値） | 未 |
@@ -191,3 +191,4 @@
 | 0-1 | なし（ブラウザの仕組みの回で、react.dev に対応するページがない）。R13・R14の割り当てもなし | R1〜R3・R7を確認。ページの外の資料なしで読める。公式ドキュメントの節は、MDNとweb.devの日本語版にリンク |
 | 0-2 | 「state を使って入力に反応する」の前半（宣言型UIと命令型UIの比較）。R13・R14の割り当てはなし | R1〜R3・R7を確認。A版＝命令型、B版＝宣言型への入口、という対応を、公式ページの節の名前つきでリンクに書いた。「宣言的」という用語そのものは0-3で出す |
 | 0-3 | JSXのルール（R13）、「JSX でマークアップを記述する」「JSX に波括弧で JavaScript を含める」「リストのレンダー」「レンダーとコミット」「UI をツリーとして理解する」「state の保持とリセット」、`createElement` | R1〜R3・R7・R13・R15を確認。JSXの4つの決まりを「関数呼び出しへの書き換え」から説明した。公式の節の名前を実際のページで確かめてリンクした。「UI をツリーとして理解する」は、木の形に触れただけで公式へのリンクは張っていない（コンポーネントが未習のため。第1回で張る）。R14（歴史）の割り当てはなし |
+| 0-4 | 「state はスナップショットである」「state 内の配列／オブジェクトの更新」「一連の state の更新をキューに入れる」「state：コンポーネントのメモリ」、`useState`、`useEffectEvent`（デモ(c)） | R1〜R3・R7・R15・R16を確認。エフェクト関連の3ページ（ライフサイクル・イベントとの切り離し・依存値の削除）は、0-4では扱いきれないので第5回に割り当て直した。0-4では `useEffect` を読める最小限の説明と、デモ(c)での見比べにとどめた。R13・R14の割り当てはなし |

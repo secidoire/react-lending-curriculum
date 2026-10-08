@@ -1,0 +1,400 @@
+import { StaleClosure } from '../demos/stale-closure'
+import {
+  compareUpdatesSandbox,
+  counterSandbox,
+  delayedCountSandbox,
+  loopButtonsSandbox,
+  objectIsSandbox,
+  pushLoansSandbox,
+} from '../examples/0-4/sandboxes'
+
+export const title = 'Hooksの前提になるJavaScript'
+
+## 前回の予告を確かめよう
+
+前回のミニReactの `app.ts` では、画面を描くたびに、行ごとに `() => toggleStatus(loan.id)` という関数を新しく作っていました。
+
+<Question>
+この関数は、ボタンが押されたとき、いつの時点の `loan` を見ているでしょうか。
+「押された瞬間の、いちばん新しい `loan`」でしょうか。それとも「この関数が作られたときの `loan`」でしょうか。予想を決めてから、先へ進みます。
+</Question>
+
+答え合わせは、このページの後半で行います。
+今日は、Reactを使い始める前の最後の準備です。Reactでつまずく場面の多くは、Reactの決まりではなく、JavaScriptそのものの性質から来ています。その性質を2つ、先に見ておきます。
+
+## Reactのコードを、少しだけ読めるようにするには？
+
+今日の例には、本物のReactのコードが出てきます。書き方は次回から扱うので、ここでは前回のミニReactとの対応だけを押さえます。
+
+<Sandbox spec={counterSandbox} />
+
+| 前回のミニReact | Reactでの書き方 | 役割 |
+|---|---|---|
+| `view()` | `Counter()`（<Term>コンポーネント</Term>と呼ぶ関数） | いまのデータから、画面のオブジェクトを作って返す |
+| `let loans` | `useState(0)` が返す1つ目（`count`） | 画面を決めるデータ（<Term>state</Term>と呼ぶ） |
+| `setLoans(next)` | `useState(0)` が返す2つ目（`setCount`） | データを新しい値に替えて、描き直してもらう |
+| `h('p', null, …)` | `<p>…</p>`（前回の最後に見たJSX） | 画面のオブジェクトを書く。`{count}` のような波括弧の中には、JavaScriptの値を書ける |
+| `render(view(), root)` | 描き直しのたびには呼ばない | Reactが、必要なときにコンポーネントを呼び直す |
+
+`const [count, setCount] = useState(0)` は、Reactに「最初の値が 0 のデータを1つ、覚えておいてください」と頼むものです。値を覚えているのはReactで、コンポーネントの関数の外にあります。
+ボタンを押すと `setCount(count + 1)` が呼ばれ、Reactが `Counter()` をもう一度呼びます。そのとき `useState` は、最初の 0 ではなく、Reactが覚えている 1 を返します。だから、返されるJSXも「1冊」に変わります。
+
+`useState` のように、名前が `use` で始まるReactの関数を<Term>フック</Term>（Hooks）と呼びます。`<button onClick={関数}>` は、「このボタンが押されたら、この関数を呼ぶ」という意味です。
+試しに、`useState(0)` の 0 を 5 に書き換えて、最初の表示が変わることを確かめてください。
+
+ミニReactと違う点が1つあります。ミニReactの `loans` は、ずっと同じ1つの変数でした。Reactの `count` は、コンポーネントが呼ばれるたびに新しく作られる変数です。この違いが、今日の後半の主題になります。
+
+前回の全体図でいえば、`setCount` が「きっかけ」、`Counter()` が呼び直されるのが「レンダー」です。
+
+## 追加したのに、なぜ画面が変わらない？
+
+貸出の一覧に、1件ずつ追加するボタンを付けました。ところが、総務の田中さんから「ボタンを押しても、何も増えません」と言われました。
+
+<Sandbox spec={pushLoansSandbox} />
+
+<Question>
+「1件追加」を何度か押してください。画面は変わりましたか。
+`addLoan` の中では、配列に1件足して（`loans.push`）、`setLoans` も呼んでいます。それなのに画面が変わらないのは、なぜでしょうか。予想してください。
+</Question>
+
+答え合わせの前に、JavaScriptの「同じ」について確かめます。
+
+## JavaScriptにとって、「同じ」とは何か？
+
+`Object.is(x, y)` は、`x` と `y` が「同じ」なら `true` を返す関数です。実行結果の表の式が、それぞれ `true` になるか `false` になるかを、予想してください（最後の1行だけは、数で答えます）。
+
+<Sandbox spec={objectIsSandbox} />
+
+<Question>
+8つすべてに予想を立ててから、「答えを表示」を押してください。
+予想と違ったのは、どれでしたか。配列やオブジェクトにとっての「同じ」は、何を比べているのでしょうか。
+</Question>
+
+<Reveal>
+
+数や文字列は、値が同じなら「同じ」です。
+配列やオブジェクトは違います。中身がまったく同じでも、別々に作ったものは「同じ」ではありません（表の上から4〜6番目）。`Object.is` が比べているのは中身ではなく、「同じ1つのものを指しているか」です。
+
+`b = a` は、配列をコピーしません。同じ1つの配列に、`b` という2つ目の名前を付けるだけです。だから `a` に `push` すると、`b` から見ても1件増えています（最後の行）。そして、`push` のあとも `a` と `b` は同じ1つの配列なので、`Object.is(a, b)` は `true` のままです（表の7番目）。
+
+変数が持っている、「どのオブジェクトを指しているか」という情報を<Term>参照</Term>と呼びます。`Object.is` は、配列やオブジェクトについては、参照が同じかどうかを比べます。
+
+</Reveal>
+
+## では、push したのに変わらなかったのは？
+
+<Question>
+Reactは、`setLoans(次の値)` が呼ばれると、いまの値と次の値を `Object.is` で比べます。
+さきほどの `addLoan` では、いまの値（`loans`）と、`setLoans` に渡した値は、どういう関係だったでしょうか。
+</Question>
+
+<Reveal>
+
+`loans.push(...)` は、いまの配列そのものに1件足します。そのあと `setLoans(loans)` で渡しているのは、同じ1つの配列です。
+Reactから見ると、いまの値と次の値は `Object.is` で「同じ」です。同じなら何も変わっていない、と判断して、画面を更新しません。
+
+<svg className="diagram" viewBox="0 0 760 250" role="img" aria-labelledby="ref-title">
+  <title id="ref-title">push では、いまの値と次の値が同じ1つの配列を指すので、描き直されない。新しい配列を作ると別のものになり、描き直される</title>
+  <defs>
+    <marker id="ref-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <g fontSize="16" fontWeight="bold" fill="#1f2328" textAnchor="middle">
+    <text x="185" y="22">push してから渡す</text>
+    <text x="575" y="22">新しい配列を作って渡す</text>
+  </g>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="2">
+    <rect x="10" y="45" width="130" height="40" rx="4" />
+    <rect x="10" y="125" width="130" height="40" rx="4" />
+    <rect x="400" y="45" width="130" height="40" rx="4" />
+    <rect x="400" y="125" width="130" height="40" rx="4" />
+  </g>
+  <g fill="#f6f8fa" stroke="#1f2328" strokeWidth="2" strokeDasharray="6 4">
+    <rect x="220" y="80" width="140" height="50" rx="4" />
+    <rect x="610" y="40" width="140" height="50" rx="4" />
+    <rect x="610" y="120" width="140" height="50" rx="4" />
+  </g>
+  <g fill="none" stroke="#1f2328" strokeWidth="1.5" markerEnd="url(#ref-arrow)">
+    <path d="M140 65 L218 95" />
+    <path d="M140 145 L218 115" />
+    <path d="M530 65 H608" />
+    <path d="M530 145 H608" />
+  </g>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="75" y="71">いまの値</text>
+    <text x="75" y="151">次の値</text>
+    <text x="290" y="111">配列（2件）</text>
+    <text x="465" y="71">いまの値</text>
+    <text x="465" y="151">次の値</text>
+    <text x="680" y="71">配列（1件）</text>
+    <text x="680" y="151">配列（2件）</text>
+    <text x="185" y="205">同じ1つの配列を指している</text>
+    <text x="185" y="232">→ 「同じ」なので、描き直さない</text>
+    <text x="575" y="205">別々の配列を指している</text>
+    <text x="575" y="232">→ 「違う」ので、描き直す</text>
+  </g>
+</svg>
+
+<p className="caption">図：実線の箱は値を入れる場所、点線の箱は配列そのもの。矢印は「これを指している」。</p>
+
+直すには、いまの配列を書き換えずに、1件足した新しい配列を作って渡します。
+
+```ts
+function addLoan() {
+  setLoans([...loans, `備品${loans.length + 1}`]);
+}
+```
+
+`[...loans, x]` は、`loans` の中身を順に並べ、最後に `x` を足した、新しい配列を作ります。2つ前の節にある `PushLoans.tsx` の枠で、`addLoan` をこの形に書き換えて、画面が変わることを確かめてください。
+
+元のものを書き換えずに、変えたあとの新しいものを作ることを、<Term>イミュータブルな更新</Term>と呼びます。Reactのstateは、いつもこの方法で更新します。
+
+</Reveal>
+
+## 1件だけ変えたいとき、全部作り直すのか？
+
+一覧の中の1件だけを「返却済」にしたい場合を考えます。配列ごと新しくするなら、中の貸出も全部作り直すのでしょうか。
+
+`updates.ts` の `returnLoan` は、指定した1件を返却済にした、新しい配列を返す関数です。`compareUpdates.ts` は、その前と後を1行ずつ `Object.is` で比べて、表にしています。
+`compareUpdates.ts` の `returnLoan(before, 2)` の 2 を 3 に書き換えると、返却済にする貸出が変わります。
+
+<Sandbox spec={compareUpdatesSandbox} />
+
+<Question>
+`returnLoan` の前と後で、「新しく作ったもの」になっているのはどれで、「同じもの」のままなのはどれでしょうか。
+変えていない行まで新しく作り直さないのは、なぜだと思いますか。
+</Question>
+
+<Reveal>
+
+新しく作ったのは、配列そのものと、状態を変えた「プロジェクター」の1件だけです。ほかの2件は、前と同じオブジェクトをそのまま使っています。
+
+```ts
+return loans.map((loan) => (loan.id === id ? { ...loan, status: 'returned' } : loan));
+```
+
+`map` が新しい配列を作ります。変える1件だけ、`{ ...loan, status: 'returned' }` で中身をコピーした新しいオブジェクトにして、ほかは `loan` をそのまま返しています。
+
+変えていないものを同じままにしておくと、「どれが変わったか」が `Object.is` だけでわかります。中身を1つずつ見比べなくて済みます。
+「同じものなら、中を見るまでもなく変わっていない」と言えることは、あとの回で、変わっていない部分の仕事を省くときに使います。
+
+</Reveal>
+
+## 3秒後に知らせた件数は、なぜ古い？
+
+次の困りごとです。「3秒後に件数を知らせる」ボタンを付けたところ、田中さんから「知らせてくる件数が、画面と合っていません」と言われました。
+
+<Sandbox spec={delayedCountSandbox} />
+
+1. 「3秒後に件数を知らせる」を押す。
+2. 3秒経つ前に、「1件追加」を2回押す。
+3. お知らせが出るのを待つ。
+
+<Question>
+画面の件数は「全3件」になっているのに、お知らせは何件と言ってきましたか。
+`setTimeout` に渡した関数は、3秒後に動きます。そのとき読んでいる `count` は、いつの `count` でしょうか。
+</Question>
+
+答え合わせの前に、もう1つ、JavaScriptの性質を確かめます。
+
+## 関数は、いつの変数を見ているのか？
+
+ループの中で、ボタンを3つずつ作りました。上の段と下の段の違いは、数える変数を `var` で作るか、`let` で作るかだけです。
+
+<Sandbox spec={loopButtonsSandbox} />
+
+<Question>
+上の段（`var`）のボタンを、どれか押してください。何番と出ましたか。下の段（`let`）ではどうですか。
+ボタンに書いてある番号は合っているのに、押したときの番号が違うのは、なぜでしょうか。
+</Question>
+
+<Reveal>
+
+`var` のボタンは、どれを押しても「3番」と出ます。`let` のボタンは、自分の番号が出ます。
+
+関数は、作られた場所から見えていた変数を、あとで呼ばれたときにも読めます。この仕組み（と、その関数）を<Term>クロージャ</Term>と呼びます。
+大事なのは、関数が覚えているのは「そのときの値」ではなく、「どの変数か」だということです。
+
+- `var i` は、ループ全体で1つの変数です。3つのボタンの関数は、同じ1つの `i` を見ています。ボタンが押されるのはループが終わったあとで、そのとき `i` は 3 になっています。
+- `let j` は、ループの1周ごとに、新しい変数が作られます。3つの関数は、それぞれ別の `j` を見ていて、その `j` はあとから変わりません。
+
+ボタンの文字（`var の 0 番`）が合っているのは、文字はループの途中でその場で作っているからです。その時点では `i` はまだ 0 でした。
+
+</Reveal>
+
+## では、3秒後の件数が古かったのは？
+
+<Question>
+Reactのコンポーネントは関数で、描き直すたびに最初から呼び直されます。`const [count, setCount] = useState(1)` の `count` は、呼ばれるたびに新しく作られる変数です。
+これは、`var` のループと `let` のループの、どちらに似ているでしょうか。それをもとに、お知らせの件数が古かった理由を説明してください。
+</Question>
+
+<Reveal>
+
+`let` のループに似ています。ループの1周が、レンダー1回にあたります。
+
+コンポーネントが呼ばれるたびに、その回だけの `count` が作られます。その回の `notifyLater` と、その中で作られる関数（`setTimeout` に渡した関数）は、その回の `count` を見ています。その `count` は、あとから変わりません。
+
+<svg className="diagram" viewBox="0 0 760 240" role="img" aria-labelledby="snap-title">
+  <title id="snap-title">レンダーごとに別の count があり、1回目のレンダーで作られた関数は、3秒後に動いても1回目の count を読む</title>
+  <defs>
+    <marker id="snap-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <g fill="#f6f8fa" stroke="#1f2328" strokeWidth="2">
+    <rect x="10" y="10" width="230" height="150" rx="6" />
+    <rect x="265" y="10" width="230" height="150" rx="6" />
+    <rect x="520" y="10" width="230" height="150" rx="6" />
+  </g>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="2">
+    <rect x="35" y="50" width="180" height="36" rx="4" />
+    <rect x="290" y="50" width="180" height="36" rx="4" />
+    <rect x="545" y="50" width="180" height="36" rx="4" />
+  </g>
+  <rect x="25" y="180" width="330" height="44" rx="4" fill="#ffffff" stroke="#1f2328" strokeWidth="2" strokeDasharray="6 4" />
+  <path d="M125 180 V89" fill="none" stroke="#1f2328" strokeWidth="2" markerEnd="url(#snap-arrow)" />
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="125" y="36" fontWeight="bold">レンダー #1</text>
+    <text x="380" y="36" fontWeight="bold">レンダー #2</text>
+    <text x="635" y="36" fontWeight="bold">レンダー #3</text>
+    <text x="125" y="74">count = 1</text>
+    <text x="380" y="74">count = 2</text>
+    <text x="635" y="74">count = 3</text>
+    <text x="125" y="118">「知らせる」を</text>
+    <text x="125" y="142">押したのは、ここ</text>
+    <text x="380" y="130">「1件追加」</text>
+    <text x="635" y="130">「1件追加」</text>
+    <text x="190" y="208">3秒後に動く関数（#1 の中で作られた）</text>
+    <text x="570" y="208">読むのは、#1 の count</text>
+  </g>
+</svg>
+
+<p className="caption">図：レンダーごとに、その回だけの count がある。関数は、自分が作られた回の count を見続ける。</p>
+
+「知らせる」を押したのは、`count` が 1 だった回です。そのあと2回描き直されて、画面は 3 件になりましたが、3秒後に動いた関数が見ているのは、自分が作られた回の `count`、つまり 1 です。
+
+`setCount` は、いまの `count` という変数を書き換える関数ではありません。「次のレンダーでは、`count` をこの値にしてください」と頼む関数です。
+レンダー1回ぶんの `count` は、その回の写真のようなものです。Reactのドキュメントでは、これを「stateは<Term>スナップショット</Term>である」と言います。
+
+冒頭の問いの答えも、同じです。`() => toggleStatus(loan.id)` は、その関数が作られた回の `loan` を見ています。ただし、画面を描き直すたびにボタンの関数も新しいものに付け替えられるので、押されるのはいつも、いちばん新しい回に作られた関数です。困るのは、古い回に作られた関数が、あとになってから動く場合です。
+
+</Reveal>
+
+## 1秒ごとに増やすはずが、なぜ 1 で止まる？
+
+最後に、もう1つ困りごとを見ます。「1秒ごとに `count` を1増やす」つもりで書いたコードです。
+
+読むために必要なことは2つだけです。
+`setInterval(関数, 1000)` は、渡した関数を1秒ごとに呼び続けます。
+`useEffect(関数, [...])` は、「レンダーの結果が画面に反映されたあとで、この関数を実行してください」とReactに頼むものです。2つ目の `[...]`（依存配列）に入れた値が前回と変わらなければ、実行し直しません。関数が `return` で返している関数は、実行し直す前の後片づけ（ここではタイマーを止める）です。詳しくは第5回で扱います。
+
+デモのコードのうち、`log.` で始まる行と1つ目の `useEffect` は、右側の履歴に記録するためのものです。読むのは、2つ目の `useEffect` だけでかまいません。
+
+<StaleClosure />
+
+最初は「バグ版」が動いています。右側には、レンダーごとの `count` が並びます。
+
+<Question>
+`count` は、いくつで止まりましたか。タイマーは止まっていません（「〜回呼ばれた」は増え続けています）。
+コールバック（`setInterval` に渡した関数）は、`count` をいくつだと見ているでしょうか。それはなぜでしょうか。
+</Question>
+
+<Reveal>
+
+`count` は 1 で止まります。
+
+タイマーを作っているのは、レンダー#1 のあとに実行された関数です。依存配列に `count` が入っていないので、そのあと `count` が変わっても、タイマーは作り直されません。
+`setInterval` に渡した関数は、レンダー#1 の `count`（0）を見続けます。1秒ごとに `setCount(0 + 1)` を呼んでいるので、何回呼ばれても、頼んでいるのは「1にしてください」です。2回目からは、いまの値と同じなので、画面は変わりません。
+
+これは、Reactの不具合ではありません。さきほどのループや、3秒後のお知らせと同じ、クロージャの性質です。
+
+</Reveal>
+
+デモの残り3つのボタンは、直し方です。それぞれ押して、右側の履歴がどう変わるかを比べてください。
+
+<Question>
+「関数型更新」と「依存配列にcount」は、どちらも `count` が増え続けます。
+右側の「タイマー」の行は、2つでどう違いますか。
+</Question>
+
+<Reveal>
+
+| 書き方 | していること | タイマー |
+|---|---|---|
+| 関数型更新 | `setCount((current) => current + 1)`。`count` を読まず、「いまの値に1を足す」という計算のしかたを渡す | 1つのまま |
+| 依存配列にcount | `count` が変わるたびに、タイマーを止めて、新しい `count` を見るタイマーを作り直す | 毎秒、作り直される |
+| useEffectEvent版 | タイマーから呼ぶ関数だけを、「呼ばれた時点のいちばん新しい値を読める」特別な関数にする | 1つのまま |
+
+「関数型更新」では、`setCount` に値ではなく関数を渡しています。Reactは、その時点のいちばん新しい値をこの関数に渡して、次の値を計算します。古い `count` を読まないので、古い回の関数が動き続けても困りません。
+「次の値が、いまの値から決まる」ときは、この書き方がいちばん素直です。
+
+残りの2つは、エフェクト（`useEffect`）の話に踏み込みます。どちらを選ぶかは、第5回で扱います。今日は、「3つとも、古い値を見続ける問題への、別々の答えである」ことだけ覚えておいてください。
+
+</Reveal>
+
+## 今日の要点
+
+<Reveal label="要点を見る">
+
+今日見たJavaScriptの性質は、2つです。
+
+| JavaScriptの性質 | Reactで起きること | 書き方 |
+|---|---|---|
+| 配列やオブジェクトの「同じ」は、中身ではなく、同じ1つのものを指しているかで決まる | 書き換えた配列を `set` しても、「同じ」と判定されて描き直されない | 書き換えずに、新しい配列・オブジェクトを作って渡す |
+| 関数は、作られたときに見えていた変数を見続ける | 古いレンダーで作られた関数は、古いstateを読む | 次の値がいまの値から決まるなら、`set` に関数を渡す |
+
+Reactは、stateの中身を見張っているわけではありません。`set` 関数が呼ばれたときに、いまの値と次の値を `Object.is` で比べるだけです。
+だから、「変えたこと」は、新しいものを作って渡すことで伝えます。
+
+</Reveal>
+
+## よくある誤解
+
+<Misconception wrong="Reactは、stateの中身が変わったことを検知して、画面を描き直す。">
+
+Reactは、中身を見張っていません。`set` 関数が呼ばれたときに、いまの値と次の値が「同じ」かどうか（配列やオブジェクトなら、同じ1つのものかどうか）を比べるだけです。配列に `push` しても、`set` に同じ配列を渡せば、何も起きません。
+
+</Misconception>
+
+<Misconception wrong="setCount を呼ぶと、count という変数が書き換わる。">
+
+その回の `count` は、最後まで変わりません。`setCount` は、「次のレンダーでは、この値にしてください」と頼むだけです。新しい値が入った `count` は、次に呼ばれたときの、別の変数です。
+
+</Misconception>
+
+<Misconception wrong="古い値を読んでしまうのは、Reactの不具合だ。">
+
+関数が、作られたときの変数を見続けるのは、JavaScriptのクロージャの性質です。`var` と `let` のループで見たことと、同じことが起きています。
+
+</Misconception>
+
+## 公式ドキュメント
+
+今日の内容のあとで読むと、理由がつながるページです。
+
+- <DocLink href="https://ja.react.dev/learn/state-as-a-snapshot">react.dev：state はスナップショットである</DocLink>（「時間経過と state」の節が、今日の「3秒後に知らせる」と同じ話）
+- <DocLink href="https://ja.react.dev/learn/updating-arrays-in-state">react.dev：state 内の配列の更新</DocLink>（「配列を書き換えずに更新する」の節に、`push` の代わりに何を使うかの一覧がある）
+- <DocLink href="https://ja.react.dev/learn/updating-objects-in-state">react.dev：state 内のオブジェクトの更新</DocLink>（「スプレッド構文を使ったオブジェクトのコピー」の節が、今日の `{ ...loan, status: 'returned' }`）
+- <DocLink href="https://ja.react.dev/learn/queueing-a-series-of-state-updates">react.dev：一連の state の更新をキューに入れる</DocLink>（「次のレンダー前に同じ state を複数回更新する」の節が、今日の関数型更新）
+- <DocLink href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Guide/Closures">MDN：クロージャ</DocLink>（「ループ内でのクロージャの作成」の節が、今日の `var` と `let` のボタン）
+
+## 今日の一文
+
+今日わかったことを、自分の言葉で1文にしてください。書けたら、例と見比べます。
+
+<Reveal label="例を見る">
+
+Reactは `set` されたときに前の値と「同じものか」を比べるだけなので、変更は新しいものを作って伝える。関数は、自分が作られた回の変数を見続ける。
+
+</Reveal>
+
+## 次回の仕様変更予告
+
+次回から、本物のReactで貸出管理アプリを作り始めます。最初は、備品の一覧です。
+
+<Question>
+一覧・検索欄・件数・状態の表示・追加フォームを、全部1つのコンポーネント（1つの関数）に書いたら、何行くらいになるでしょうか。
+その中で「状態の表示の色を変えてほしい」と頼まれたら、どこを直せばよいか、すぐに見つけられるでしょうか。
+</Question>
