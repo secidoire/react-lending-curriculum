@@ -95,13 +95,30 @@ a {
 .content {
   flex: 1 1 auto;
   min-width: 0;
-  max-width: calc(760px + 4em);
+  max-width: calc(1180px + 4em);
   margin: 0 auto;
   padding: 1.5em 2em 6em;
 }
 
-.layout.present .content {
-  max-width: calc(950px + 4em);
+/* 本文は読みやすい幅（760px）に収め、コードと実行結果の枠だけは横いっぱいに使う。 */
+.content article > *,
+.content .steps > * {
+  max-width: 760px;
+}
+
+.content article > .sandbox,
+.content article > .steps {
+  max-width: none;
+}
+
+.layout.present .content article > *,
+.layout.present .content .steps > * {
+  max-width: 950px;
+}
+
+.layout.present .content article > .sandbox,
+.layout.present .content article > .steps {
+  max-width: none;
 }
 
 .mode-switch {
@@ -326,33 +343,119 @@ svg.diagram {
   }
 }
 
-/* ページの中で動かす例 */
+/* ページの中で動かす例（SourceVsDom など、専用の見せ方をするもの） */
 .live-example {
   border-style: solid;
   border-color: var(--text);
 }
 
-.live-example .box-label {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5em 1em;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .live-example button,
-.live-example input,
-.live-example select {
+.sandbox-root button,
+.sandbox-root input,
+.sandbox-root select {
   padding: 0.2em 0.6em;
   font: inherit;
 }
 
-.live-example-reset {
-  font-weight: normal;
+.live-example table,
+.sandbox-root table {
+  margin: 0.5em 0;
 }
 
-.live-example table {
-  margin: 0.5em 0;
+/* コードと実行結果を並べる枠 */
+.sandbox {
+  margin: 1.5em 0;
+  border: 2px solid var(--text);
+  border-radius: 6px;
+}
+
+.sandbox-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em 1em;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25em 0.5em;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+  font-size: 0.875em;
+}
+
+.sandbox.code-closed .sandbox-bar {
+  justify-content: flex-end;
+}
+
+.sandbox-bar button {
+  padding: 0.2em 0.75em;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sandbox-tabs button[aria-selected='true'] {
+  border-color: var(--text);
+  background: var(--bg);
+  font-weight: bold;
+}
+
+.sandbox-actions button {
+  border-color: var(--line);
+  background: var(--bg);
+}
+
+.sandbox-panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.code-editor {
+  min-width: 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.875em;
+}
+
+.code-editor .cm-editor {
+  max-height: 32em;
+}
+
+.code-editor .cm-scroller {
+  overflow: auto;
+  line-height: 1.6;
+}
+
+.sandbox-preview {
+  min-width: 0;
+  padding: 0.5em 1em 1em;
+  overflow-x: auto;
+}
+
+.sandbox-pane-label {
+  margin: 0 0 0.25em;
+  color: var(--muted);
+  font-size: 0.875em;
+  font-weight: bold;
+}
+
+.sandbox-error {
+  margin: 0.5em 0 0;
+  padding: 0.5em 0.75em;
+  border: 2px dashed var(--warning);
+  border-radius: 6px;
+  color: var(--warning);
+}
+
+/* 幅があるときは、コードと実行結果を横に並べる */
+@media (min-width: 1200px) {
+  .sandbox:not(.code-closed) .sandbox-panes {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .code-editor {
+    border-right: 1px solid var(--line);
+    border-bottom: none;
+  }
 }
 
 .loan-form {
@@ -402,11 +505,17 @@ pre.pane {
   font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
 }
 
-/* 0-1：色と幅の例 */
-.colored {
-  background: #ffe08a;
+/* 実行結果の中は、横に並べても収まるよう少し詰める */
+.sandbox-root {
+  font-size: 0.9em;
 }
 
-.wide {
-  width: 22em;
+.sandbox-root th,
+.sandbox-root td {
+  padding: 0.3em 0.6em;
+  white-space: nowrap;
+}
+
+.sandbox-root button {
+  white-space: nowrap;
 }

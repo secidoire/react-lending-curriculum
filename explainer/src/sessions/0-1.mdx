@@ -1,5 +1,4 @@
-import { AppendBenchmark } from '../examples/0-1/AppendBenchmark'
-import { startColorAndWidth } from '../examples/0-1/colorAndWidth'
+import { benchmarkSandbox, colorAndWidthSandbox } from '../examples/0-1/sandboxes'
 import { SourceVsDom } from '../examples/0-1/SourceVsDom'
 
 export const title = 'ブラウザとDOM'
@@ -137,7 +136,9 @@ Elements パネルが見せているのはDOMです。`index.html` は、DOMを�
 
 DOMやスタイルを変更すると、ブラウザは図の途中の段階から、下に向かってもう一度計算します。
 
-<LiveExample start={startColorAndWidth} />
+下の枠は、左がコード、右がその実行結果です。コードは書き換えられ、書き換えると実行結果も変わります。
+
+<Sandbox spec={colorAndWidthSandbox} />
 
 <Question>
 2つのボタンを押して、変わる前と後を見比べてください。
@@ -228,10 +229,12 @@ for (const item of items) {
 
 <Question>
 測る前に、遅い順を予想してください。
-予想できたら、下のボタンをそれぞれ3回ずつ押して確かめます。
+予想できたら、実行結果の中のボタンをそれぞれ3回ずつ押して確かめます。
 </Question>
 
-<AppendBenchmark />
+<Sandbox spec={benchmarkSandbox} />
+
+3つの方法は `appendRows.ts` に書いてあります。読む値を変えたり、行数を変えたりして、結果がどう変わるかを試せます。
 
 <Question>
 結果は、予想と比べてどうでしたか。

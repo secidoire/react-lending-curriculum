@@ -19,11 +19,12 @@ react-lending-curriculum/
    └─ src/
       ├─ main.tsx / App.tsx
       ├─ router/           # useHashRoute.ts（自作ルーター）, parseHash.ts, pages.ts（import.meta.glob）
-      ├─ components/       # Reveal, Steps, Question, Misconception, Term, DocLink, Preview, LiveExample, Layout
+      ├─ components/       # Reveal, Steps, Question, Misconception, Term, DocLink, Preview, Layout
+      ├─ sandbox/          # Sandbox（コードと実行結果を並べ、書き換えて実行する枠）
       ├─ sessions/         # 0-1.mdx 〜 08.mdx, A-1.mdx, A-2.mdx
       ├─ examples/         # 各回のページに埋め込む動く例
       │  ├─ find.ts        # 例で共通に使う小さな道具
-      │  └─ <回>/          # その回の例・純粋関数・テスト。悪い例は bad-examples/ に置く
+      │  └─ <回>/          # その回の例・純粋関数・テスト・sandboxes.ts（枠の定義）。悪い例は bad-examples/ に置く
       ├─ demos/            # 視覚デモ（4本だけ）
       │  ├─ full-vs-diff/  # (a)
       │  ├─ key-reorder/   # (b)

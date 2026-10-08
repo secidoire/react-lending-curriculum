@@ -1,6 +1,4 @@
-import { startListWithBugs } from '../examples/0-2/bad-examples/listWithBugs'
-import { startManual } from '../examples/0-2/manual'
-import { startRerender } from '../examples/0-2/rerender'
+import { listWithBugsSandbox, manualSandbox, rerenderSandbox } from '../examples/0-2/sandboxes'
 
 export const title = '素のJSで貸出一覧'
 
@@ -19,8 +17,9 @@ export const title = '素のJSで貸出一覧'
 総務の田中さんの依頼で、貸出一覧に機能を足しました。貸出の追加と削除、「貸出中のみ」の絞り込み、件数の表示です。
 フレームワークは使わず、ブラウザに最初からあるDOMのAPIだけで書いてあります。
 
-<LiveExample label="動かしてみよう：できあがったように見える一覧" start={startListWithBugs} />
+<Sandbox spec={listWithBugsSandbox} codeClosed />
 
+コードは、まだ開かないでください。先に、画面の操作だけで調べます。
 追加も、削除も、「貸出中のみ表示」も、ひととおり動いているように見えます。
 ところが、この一覧には、操作のあとで画面の中の表示どうしが合わなくなる操作が2つあります。
 
@@ -47,7 +46,9 @@ export const title = '素のJSで貸出一覧'
 
 ## コードのどこが足りない？
 
-この一覧のコードを読みます。まず、削除ボタンを押したときの処理です。
+この一覧のコードを読みます。上の枠の「コードを見る」を押すと、全体（`listWithBugs.ts`）が開きます。ここでは、関係する3か所を抜き出します。
+
+まず、削除ボタンを押したときの処理です。
 
 ```ts
 deleteButton.addEventListener('click', () => {
@@ -103,6 +104,8 @@ deleteButton.addEventListener('click', () => {
 row.hidden = lentOnly.checked && loan.status !== 'lent';
 tbody.append(row);
 ```
+
+上の枠のコードは書き換えられます。この2行を足して、2つのバグが直ることを確かめてください。
 
 この2つを直した版を、ここではA版と呼びます。A版では、操作のたびに、次の場所を自分で直しています。
 
@@ -238,14 +241,18 @@ DOMにも行はありますが、それはデータから作った写しで、�
 
 ## 全部作り直すと、何が失われる？
 
-B版にも、困ることがあります。下の2つの一覧で、同じ操作をして比べます。
+B版にも、困ることがあります。下の2つの一覧で、同じ操作をして比べます。どちらも、左がコードの全体、右がその実行結果です。
 
 1. 「リーダブルコード」のメモ欄に、何か文字を入力する。
 2. 「プロジェクター」の行の「削除」を押す。
 
-<LiveExample label="動かしてみよう：B版（全部作り直す）" start={startRerender} />
+B版（`rerender.ts`）：
 
-<LiveExample label="動かしてみよう：A版（変わったところだけ直す）" start={startManual} />
+<Sandbox spec={rerenderSandbox} />
+
+A版（`manual.ts`）：
+
+<Sandbox spec={manualSandbox} />
 
 <Question>
 メモ欄は、それぞれどうなりましたか。

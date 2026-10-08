@@ -20,9 +20,11 @@ export function startColorAndWidth(root: HTMLElement): void {
   const itemColumn = find(root, '.item-column', HTMLTableCellElement);
 
   find(root, '.change-color', HTMLButtonElement).addEventListener('click', () => {
-    firstRow.classList.toggle('colored');
+    // 色だけを変える。大きさと位置は変わらない。
+    firstRow.style.background = firstRow.style.background === '' ? '#ffe08a' : '';
   });
   find(root, '.change-width', HTMLButtonElement).addEventListener('click', () => {
-    itemColumn.classList.toggle('wide');
+    // 列の幅を変える。同じ列のセルと、隣の列の位置も変わる。
+    itemColumn.style.width = itemColumn.style.width === '' ? '16em' : '';
   });
 }

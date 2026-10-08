@@ -17,6 +17,10 @@
 | @mdx-js/rollup | 導入時の最新安定版で固定する |
 | @shikijs/rehype | 導入時の最新安定版で固定する |
 | @types/mdx | 導入時の最新安定版で固定する |
+| sucrase | 3.35.1（ページの上で書き換えられたTypeScript/JSXを、ブラウザ内でJavaScriptに変換する） |
+| codemirror / @codemirror/lang-javascript | 6.0.2 / 6.2.5（コードを書き換えるエディタ） |
+
+React公式ドキュメントが使っている Sandpack は採用しない。既定では外部のサービスでコードを変換するため、「外部と通信しない」方針に合わない。
 
 ## 第7回で追加（React Compilerをページ内の例で見せる場合。導入のしかたは第7回の着手時に決める）
 | パッケージ | 指定 |

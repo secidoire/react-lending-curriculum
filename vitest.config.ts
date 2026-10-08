@@ -28,7 +28,16 @@ export default defineConfig({
         plugins: [mdxPlugin(), react({ include: /\.(mdx|js|jsx|ts|tsx)$/ })],
         // 初回の実行中に依存の事前バンドルがやり直されるとテストが落ちるので、先に列挙しておく。
         optimizeDeps: {
-          include: ['vitest-browser-react', 'react', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'zod'],
+          include: [
+            'vitest-browser-react',
+            'react',
+            'react/jsx-runtime',
+            'react/jsx-dev-runtime',
+            'zod',
+            'sucrase',
+            'codemirror',
+            '@codemirror/lang-javascript',
+          ],
         },
         test: {
           name: 'browser',
