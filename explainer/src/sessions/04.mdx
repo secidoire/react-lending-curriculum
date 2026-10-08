@@ -1,0 +1,289 @@
+import { loanBoardSandbox, looseLoansSandbox } from '../examples/04/sandboxes'
+
+export const title = '貸出ステータスとデータ設計'
+
+## 前回の予告を確かめよう
+
+総務の田中さんから、依頼が来ました。「先に『予約』しておいて、当日に『貸出』にして、戻ってきたら『返却』にしたいんです。返却期限を過ぎているものは、『延滞』とわかるようにしてください。」
+
+<Question>
+貸出に「予約中」「貸出中」「返却済」という状態が付き、「返却期限」や「返却した日」も記録します。
+予約中の貸出に、「返却した日」が入っていたら、おかしいでしょうか。そういう「ありえない組み合わせ」を、型で防ぐことはできるでしょうか。予想を決めてから、先へ進みます。
+</Question>
+
+## この一覧、どこがおかしい？
+
+依頼どおりに作った一覧です。「今日」は、2026年10月20日として動かしています。
+
+<Sandbox spec={looseLoansSandbox} codeClosed />
+
+コードは、まだ開かないでください。先に、画面の操作だけで調べます。
+
+<Question>
+ボタンをいろいろな順番で押して、「ありえない表示」を3つ以上見つけてください。
+見つけたら、「何をして、何が、どうおかしくなったか」を言葉にします。
+</Question>
+
+<Reveal label="見つからなかったら開く">
+
+- 最初の表示を見る。「リーダブルコード」は期限（10月17日）を過ぎているのに、「延滞を確認する」を押すまで、延滞と出ない。
+- 「延滞を確認する」を押してから、「リーダブルコード」を返却する。もう返したのに「延滞」が付いたままで、返却日の記録もない。
+- 「プロジェクター」（予約中）の「返却する」を押す。一度も貸し出していないのに、返却済になる。
+- 「『プロジェクター』を改名する」を押す。備品の一覧は新しい名前になるのに、貸出の一覧は古い名前のまま。
+
+</Reveal>
+
+## なぜ、ありえない状態を作れてしまう？
+
+上の枠の「コードを見る」を開いて、`Loan` の型を読んでください。
+
+```ts
+type Loan = {
+  id: string;
+  itemName: string;
+  userName: string;
+  status: string;
+  dueDate?: string;
+  returnedAt?: string;
+  overdue?: boolean;
+};
+```
+
+`?` の付いた項目は、「あってもなくてもよい」という意味です。
+
+<Question>
+この型は、次のような値を許すでしょうか。
+
+- `status` が `'returned'` で、`returnedAt` がない。
+- `status` が `'returned'` で、`overdue` が `true`。
+- `status` が `'reservd'`（つづりの間違い）。
+
+見つけたバグは、それぞれ、どこから来ているでしょうか。
+</Question>
+
+<Reveal>
+
+3つとも、許してしまいます。`status` の型が `string` なので、どんな文字列でも通ります。型が許している値は、コードのどこかで、うっかり作られてしまいます。
+
+- **返却日がない・延滞が残る**：`status` と、`returnedAt` や `overdue` が、別々の項目になっています。「返却済なら、返却日が必ずある」という関係が、型のどこにも書かれていません。返却の処理が `status` だけを書き換えても、型は何も言いません。
+- **延滞が出ない・残る**：延滞かどうかは、期限と今日の日付から計算できます。計算できるものを `overdue` として持っているので、誰かがボタンを押して合わせ直すまで、古いままです。第2回の派生データと同じ問題です。
+- **予約中からいきなり返却**：「どの状態から、どの状態へ変われるか」という決まりが、どこにも書かれていません。ボタンの処理が、好きなように `status` を書き換えています。
+- **改名が反映されない**：貸出が、備品の名前のコピー（`itemName`）を持っています。同じ情報が2か所にあるので、片方を変えても、もう片方は古いままです。
+
+どれも、これまでの回で見てきた「同じ情報を2か所に持つ」「関係が書かれていない」の、データの形での現れです。
+
+</Reveal>
+
+## 状態ごとに、持つものを変えられないか？
+
+<Question>
+「予約中の貸出」「貸出中の貸出」「返却済の貸出」は、それぞれ、どんな項目を必ず持っているべきでしょうか。持っていてはいけない項目は、どれでしょうか。
+3つを、別々の型として書いてみると、どうなるでしょうか。
+</Question>
+
+<Reveal>
+
+状態ごとに型を分け、「貸出とは、この3つのうちのどれか」と書きます。
+
+```ts
+type LoanBase = { id: string; itemId: string; userName: string };
+
+export type Loan =
+  | (LoanBase & { status: 'reserved'; reservedFrom: IsoDate; reservedTo: IsoDate })
+  | (LoanBase & { status: 'lent'; lentAt: IsoDate; dueDate: IsoDate })
+  | (LoanBase & { status: 'returned'; lentAt: IsoDate; dueDate: IsoDate; returnedAt: IsoDate });
+```
+
+`|` は「または」、`&` は「両方の項目を持つ」です。`LoanBase` は、3つの状態に共通の項目です。`IsoDate` は、`2026-10-20` の形の文字列に付けた名前です。
+`status: 'reserved'` は、「`'reserved'` という文字列だけを許す」という型です。`string` と違って、ほかの文字列は入りません。
+
+<svg className="diagram" viewBox="0 0 760 215" role="img" aria-labelledby="states-title">
+  <title id="states-title">貸出は、予約中から lend で貸出中に、貸出中から returnLoan で返却済に変わる。それ以外の変わり方はない</title>
+  <defs>
+    <marker id="states-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="2">
+    <rect x="10" y="20" width="200" height="120" rx="6" />
+    <rect x="280" y="20" width="200" height="120" rx="6" />
+    <rect x="550" y="20" width="200" height="120" rx="6" />
+  </g>
+  <g fill="none" stroke="#1f2328" strokeWidth="2" markerEnd="url(#states-arrow)">
+    <path d="M210 80 H277" />
+    <path d="M480 80 H547" />
+  </g>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="110" y="48" fontWeight="bold">reserved（予約中）</text>
+    <text x="110" y="82">reservedFrom</text>
+    <text x="110" y="108">reservedTo</text>
+    <text x="380" y="48" fontWeight="bold">lent（貸出中）</text>
+    <text x="380" y="82">lentAt</text>
+    <text x="380" y="108">dueDate</text>
+    <text x="650" y="48" fontWeight="bold">returned（返却済）</text>
+    <text x="650" y="76">lentAt</text>
+    <text x="650" y="100">dueDate</text>
+    <text x="650" y="124">returnedAt</text>
+    <text x="244" y="68">lend</text>
+    <text x="514" y="68">returnLoan</text>
+    <text x="380" y="180">延滞は、状態ではない。isOverdue(loan, today) で、そのつど計算する。</text>
+    <text x="380" y="205">貸出は、備品の名前を持たない。itemId から、いまの名前を引く。</text>
+  </g>
+</svg>
+
+<p className="caption">図：箱は状態と、その状態が必ず持つ項目。矢印は、状態を変える関数。矢印のない変わり方はできない。</p>
+
+こう書くと、「返却済なのに `returnedAt` がない」値は、型エラーになって書けません。`overdue` という項目は、そもそもどこにもありません。`'reservd'` も、3つのどれにも当てはまらないので書けません。
+ありえない状態を、あとから確かめて弾くのではなく、コードの中では最初から書けなくしています。
+（型が守るのは、自分たちのコードの中だけです。保存したデータやサーバーの返事のように、外から来る値は、前回のように境界でスキーマを使って確かめます。）
+
+`status` のように、どの形かを見分ける項目を持たせた「または」の型を、<Term>判別可能なユニオン型</Term>と呼びます。`loan.status === 'lent'` と確かめると、TypeScriptは、その先で `loan.dueDate` があると理解します。確かめる前に `loan.dueDate` と書くと、型エラーになります。
+
+なお、このページの枠は、型チェックをせずにコードを動かしています。枠の中で型に合わないコードを書いても、型エラーは表示されません。ふだんの開発では、エディタが、書いたその場で赤い波線で知らせます。
+
+</Reveal>
+
+## 状態の変え方は、どこに書く？
+
+型で、「どんな値がありうるか」は決まりました。次は、「どの状態から、どの状態へ変われるか」です。
+下の枠の `loan.ts` を開いてください。読むのは、`lend`・`returnLoan`・`isOverdue` の3つの関数です。
+
+<Sandbox spec={loanBoardSandbox} />
+
+<Question>
+最初の枠で見つけた「ありえない表示」を、この枠でも起こそうとしてみてください。起こせましたか。
+`returnLoan` は、貸出中でない貸出を渡されたとき、どうするでしょうか。`isOverdue` は、なぜ「今日」を引数で受け取っているのでしょうか（関数の中で `new Date()` を呼べば、引数は要らないはずです）。
+</Question>
+
+<Reveal>
+
+どれも起こせません。
+
+- 「延滞」は、最初から、期限を過ぎた貸出中のものにだけ出ています。確認するボタンはありません。返却すれば、消えます。
+- 返却すると、必ず返却日が入ります。`returnLoan` が作る返却済の値には、`returnedAt` がないと型エラーになるからです。
+- 改名は、貸出の一覧にも反映されます。貸出は名前を持たず、`itemId` から、いまの名前を引いているからです。同じ情報を1か所にしか持たないこの形を、<Term>正規化</Term>と呼びます。
+
+`returnLoan` は、貸出中でなければ、`{ ok: false, reason: '…' }` を返して、何も変えません。予約中の行に「返却する」ボタンが出ていないのは、利用者への親切です。決まりを守っているのは、ボタンではなく、この関数です。
+
+`isOverdue` が「今日」を引数で受け取るのは、純粋関数にしておくためです。中で `new Date()` を呼ぶと、同じ貸出を渡しても、実行した日によって結果が変わってしまいます。引数で受け取れば、同じ引数なら、いつも同じ結果です。「期限の翌日なら延滞」を確かめるテストも、好きな日付を渡すだけで書けます。
+この3つの関数は、Reactと関係がありません。値を受け取って、値を返すだけの純粋関数です。
+
+なお、「期限を過ぎてから返された」という事実そのものは、ありえます。良い版では、それも `returnedAt` と `dueDate` を比べれば計算できます。おかしかったのは、計算せずに持っていた `overdue` が、古いまま残ったことです。
+
+</Reveal>
+
+## 画面からは、何を伝える？
+
+`LoanBoard.tsx` を開いてください。`useState` の代わりに、`useReducer` を使っています。
+
+```tsx
+const [state, dispatch] = useReducer(loansReducer, { loans: initialLoans, error: null });
+// …
+onReturn={() => dispatch({ type: 'returned', loanId: loan.id, today: TODAY })}
+```
+
+| | `useState` | `useReducer` |
+|---|---|---|
+| 画面が渡すもの | 次の値そのもの（`setLoans(次の配列)`） | 何が起きたか（`dispatch({ type: 'returned', … })`） |
+| 次の値を決める場所 | イベントハンドラの中 | `loansReducer`（1つの関数） |
+
+`dispatch` に渡す、「何が起きたか」を表す値を<Term>アクション</Term>と呼びます。`loansReducer(いまのstate, アクション)` が、次の state を返します。この関数を<Term>リデューサ</Term>と呼びます。
+
+- `useReducer(リデューサ, 最初のstate)` は、`useState` と同じように、いまの state と、それを変えるための関数（`dispatch`）を返します。
+- `dispatch(アクション)` を呼ぶと、Reactが、いまの state とそのアクションをリデューサに渡します。返ってきた値が次の state になり、再レンダーされます。
+- アクションの `type` の `'lent'` は、「貸出された」という出来事の名前です。次の状態を直接指定しているわけではありません。どの状態になるかは、リデューサが決めます。
+- state を `{ loans, error }` というオブジェクトにしたのは、できなかった操作の理由（`error`）も、貸出と一緒に決まるからです。
+
+<Question>
+`loansReducer.ts` を読んでください。「予約中のものを返却しようとした」とき、リデューサは何を返すでしょうか。
+`LoanRow.tsx` の `{loan.status === 'lent' && (` を `{true && (` に書き換えると、予約中の行にも「返却する」が出ます。押すと、どうなるでしょうか。
+</Question>
+
+<Reveal>
+
+予約中の行の「返却する」を押しても、貸出は変わらず、「返却できるのは、貸出中のものだけです」と表示されます。
+
+リデューサは、対象の貸出を探し、`loan.ts` の関数（`lend` か `returnLoan`）を呼びます。できなかったときは、貸出を変えずに、理由だけを state に入れます。
+決まりそのものは `loan.ts` にあり、リデューサはそれを呼ぶだけです。画面は、起きたことを伝えるだけです。
+
+最初の枠のバグを防いでいるのは、型と、`loan.ts` の関数です。`useState` のままでも、イベントハンドラが必ず `loan.ts` の関数を通るなら、決まりは守れます。ただ、`setLoans` には好きな値を渡せるので、関数を通らずに書き換える道が残ります。
+`useReducer` にすると、貸出の state を変える道が、リデューサの1本だけになります。「どう変わるか」を知りたければ、`loan.ts` と `loansReducer.ts` だけを読めば足ります。
+リデューサも、Reactと関係のない純粋関数です。「この state に、このアクションが来たら、こうなる」を、画面なしでテストできます。
+
+</Reveal>
+
+## 今日の要点
+
+<Question>
+レビューの問いです。「予約をキャンセルできるようにしてほしい」と言われました。`Loan` の型に、4つ目の `{ status: 'cancelled'; … }` を足すとします。
+先に、実験を1つします。上の枠の `initialLoans.ts` で、1件目の `status: 'reserved'` を `status: 'cancelled'` に書き換えてください。実行結果に、どんなエラーが出ましたか。
+
+そのエラーを出したのは、`loan.ts` の `describeLoan` の `default` にある `assertNever(loan)` です。`assertNever` の引数の型 `never` は、「ここに来る値は、1つもないはず」という意味の型です。
+これをもとに考えてください。型に4つ目の状態を足したあと、直さなければならない場所を、TypeScriptは教えてくれるでしょうか。
+</Question>
+
+<Reveal label="答えと要点を見る">
+
+`switch` と `assertNever` を書いてある場所については、教えてくれます。
+`describeLoan` の `switch` には、3つの状態の `case` があります。`case` を1つ通るたびに、TypeScriptは「残りの候補」を減らしていきます。3つとも書いてあれば、`default` に来る値は残っていないので、`never` を受け取る `assertNever(loan)` に渡せます。
+4つ目の状態を足すと、`default` に `cancelled` の貸出が来うるので、`never` には渡せず、型エラーになります。「ここに `case` を足してください」と、コンパイラが教えてくれるわけです。
+
+さきほどの実験では、枠が型チェックをしないので、動かしてから `assertNever` がエラーを出しました。ふだんの開発では、動かす前に、エディタが型エラーとして知らせます。
+
+`if (loan.status !== 'lent')` のように `if` で書いた場所や、キャンセルのための関数やボタンが足りないことは、教えてくれません。だから、状態で分ける処理は、`switch` と `assertNever` で書いておきます。
+
+- 状態ごとに型を分けて、ありえない組み合わせを書けなくする。
+- 計算できるもの（延滞）は、持たずに計算する。同じ情報（備品の名前）は、1か所にだけ持つ。
+- 「どう変われるか」の決まりは、Reactと関係のない関数に集める。画面は、起きたことを伝えるだけにする。
+
+</Reveal>
+
+## よくある誤解
+
+<Misconception wrong="useReducer は、大規模なアプリのためのものだ。">
+
+目的は規模ではありません。state の変え方の決まりを、1か所に集めることです。小さな画面でも、「この状態からは、この操作しかできない」という決まりがあるなら、役に立ちます。決まりのない単純な値なら、`useState` で十分です。
+
+</Misconception>
+
+<Misconception wrong="項目を省略可能（?）にしておけば、どんな場合にも対応できて柔軟だ。">
+
+省略可能な項目が増えるほど、型が許す組み合わせが増えます。その多くは、ありえない組み合わせです。それを作らないように気をつける仕事が、コードのあちこちに生まれます。
+
+</Misconception>
+
+<Misconception wrong="延滞は状態の1つなので、status に 'overdue' を足せばよい。">
+
+延滞は、誰も操作しなくても、時間が経つだけで始まります。`status` に持たせると、誰かが書き換えるまで、古いままになります。期限と今日の日付から、レンダーのたびに計算します。
+
+</Misconception>
+
+## 公式ドキュメント
+
+今日の内容のあとで読むと、理由がつながるページです。
+
+- <DocLink href="https://ja.react.dev/learn/choosing-the-state-structure">react.dev：state 構造の選択</DocLink>（「state の矛盾を避ける」の節が、今日の「ありえない組み合わせ」。「state 内の重複を避ける」の節が、備品の名前のコピー）
+- <DocLink href="https://ja.react.dev/learn/extracting-state-logic-into-a-reducer">react.dev：state ロジックをリデューサに抽出する</DocLink>（「リデューサで state ロジックを集約する」の節が、今日の `useState` から `useReducer` への書き換え）
+- <DocLink href="https://ja.react.dev/reference/react/useReducer">react.dev：useReducer</DocLink>（引数と戻り値の説明）
+- <DocLink href="https://ja.react.dev/learn/updating-objects-in-state">react.dev：state 内のオブジェクトの更新</DocLink>（リデューサの中でも、state は書き換えずに新しく作る）
+- <DocLink href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions">TypeScript Handbook：Discriminated unions</DocLink>（判別可能なユニオン型と、`never` による網羅の確認。英語）
+
+## 今日の一文
+
+今日わかったことを、自分の言葉で1文にしてください。書けたら、例と見比べます。
+
+<Reveal label="例を見る">
+
+ありえない状態は、あとから確かめるのではなく、型で書けなくする。状態の変え方の決まりは、Reactと関係のない関数に集める。
+
+</Reveal>
+
+## 次回の仕様変更予告
+
+田中さんから、次の依頼が来ます。
+「ページを読み込み直すと、登録した貸出が全部消えてしまいます。消えないようにしてください。」
+
+<Question>
+データを保存したり読み込んだりするのには、時間がかかります。その間、画面には何を表示すればよいでしょうか。
+読み込みに失敗することも、保存したデータが壊れていることもあります。画面が取りうる状態を、すべて挙げてみてください。
+</Question>

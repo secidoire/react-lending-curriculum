@@ -742,3 +742,11 @@ pre.pane {
 .field-error::before {
   content: '⚠ ';
 }
+
+/* 第4回：延滞の表示。色だけでなく、枠と文字でも示す。 */
+.overdue {
+  padding: 0 0.5em;
+  border: 2px dashed var(--warning);
+  border-radius: 4px;
+  color: var(--warning);
+}

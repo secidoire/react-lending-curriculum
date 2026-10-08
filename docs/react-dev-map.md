@@ -60,17 +60,17 @@
 | レンダーとコミット | `render-and-commit` | 0-3・第1回・発展A-2 | 0-3済み |
 | state はスナップショットである | `state-as-a-snapshot` | 0-4・発展A-1 | 0-4済み |
 | 一連の state の更新をキューに入れる | `queueing-a-series-of-state-updates` | 0-4（関数型更新）・発展A-1（まとめて処理される仕組み） | 0-4で一部 |
-| state 内のオブジェクトの更新 | `updating-objects-in-state` | 0-4・第4回 | 0-4済み |
-| state 内の配列の更新 | `updating-arrays-in-state` | 0-4・第4回 | 0-4済み |
+| state 内のオブジェクトの更新 | `updating-objects-in-state` | 0-4・第4回 | 済み |
+| state 内の配列の更新 | `updating-arrays-in-state` | 0-4・第4回 | 済み |
 
 ### state の管理
 | 公式ページ | スラッグ | 扱う回 | 状態 |
 |---|---|---|---|
 | state を使って入力に反応する | `reacting-to-input-with-state` | 0-2（命令的UIの限界）・第5回（状態を列挙する） | 0-2済み |
-| state 構造の選択 | `choosing-the-state-structure` | 第2回（冗長な state を避ける）・第4回（矛盾を避ける） | 第2回済み |
+| state 構造の選択 | `choosing-the-state-structure` | 第2回（冗長な state を避ける）・第4回（矛盾を避ける・重複を避ける） | 済み |
 | コンポーネント間で state を共有する | `sharing-state-between-components` | 第2回（検索条件を一覧と件数で共有する） | 済み |
 | state の保持とリセット | `preserving-and-resetting-state` | 0-3（デモb）・第1回 | 0-3済み |
-| state ロジックをリデューサに抽出する | `extracting-state-logic-into-a-reducer` | 第4回 | 未 |
+| state ロジックをリデューサに抽出する | `extracting-state-logic-into-a-reducer` | 第4回 | 済み |
 | コンテクストで深くデータを受け渡す | `passing-data-deeply-with-context` | 第6回 | 未 |
 | リデューサとコンテクストでスケールアップ | `scaling-up-with-reducer-and-context` | 第6回・第7回 | 未 |
 
@@ -101,7 +101,7 @@
 | フック | 重要度 | 扱う回 | 状態 |
 |---|---|---|---|
 | useState | 必須 | 0-4・第2回・発展A-1 | 第2回まで済み |
-| useReducer | 必須 | 第4回 | 未 |
+| useReducer | 必須 | 第4回 | 済み |
 | useContext | 必須 | 第6回 | 未 |
 | useRef | 必須 | 第3回（DOM）・第5回（値） | 第3回済み |
 | useEffect | 必須 | 第5回・発展A-2 | 未 |
@@ -195,3 +195,4 @@
 | 第1回 | 「React の流儀」（分割）、「初めてのコンポーネント」「インポートとエクスポート」「props を渡す」「条件付きレンダー」「リストのレンダー」「UI をツリーとして理解する」「レンダーとコミット」、ルール「コンポーネントやフックを呼び出すのは React」、Fragment、R17（タイミング） | R1〜R3・R7・R13・R15〜R17を確認。レンダーとコミットの図を、0-3と同じ並びでReactの言葉に置き換えて再掲した。「コンポーネントを自分で呼ばない」は理由を1段落で述べただけで、体験は発展A-1に残した。props の `children` は扱っていない（第6回で扱う）。R14（歴史）の割り当てはなし |
 | 第2回 | 「React の流儀」（ステップ3〜5）、「イベントへの応答」「state 構造の選択」「state を共有する」「そのエフェクトは不要かも」「コンポーネントを純粋に保つ」、ルール「純粋に保つ」「フックのルール」、`useState` | R1〜R3・R7・R15を確認。制御された入力（公式では「state を使って入力に反応する」やフォームの項で扱う内容）も、ここで導入した。フックのルールは決まりとして述べ、理由の体験は発展A-1に残した。リフトアップは、stateを子に持たせた版での体験はさせていない。R14（歴史）の割り当てはなし |
 | 第3回 | 「イベントへの応答」（送信と `preventDefault`）、「ref で DOM を操作する」、`useRef`、`useId`、props の `children` | R1〜R3・R7・R15・R16（境界の図）を確認。zod のスキーマは、`parseLendForm` の中身までは説明していない（読み飛ばしてよいと明記）。`useId` は、フォームを2つ置く体験まではさせていない。「FormData版との比較」は第5回に移した。R14（歴史）の割り当てはなし |
+| 第4回 | 「state 構造の選択」（矛盾・重複）、「state ロジックをリデューサに抽出する」、`useReducer` | R1〜R3・R7・R15・R16（状態遷移図）を確認。状態遷移図は `loan.ts` の状態名・項目・関数名と照合した（延滞を状態として描かず、cancel も描いていない）。枠は型チェックをしないので、型エラーの体験は「型にない状態で `assertNever` が止まる」実験で代えた。予約期間の重複（`overlaps`）は第7回に移した。R14（歴史）の割り当てはなし |
