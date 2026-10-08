@@ -580,6 +580,77 @@ Reactでは、この2つの段階に別々の名前が付いています。
 
 </Reveal>
 
+## 全体を1枚の図で見ると？
+
+ここまでの流れを、1枚にまとめます。ボタンを1回押すたびに、上から下へ、4つの段階を順に進みます。
+
+<svg className="diagram" viewBox="0 0 760 565" role="img" aria-labelledby="cycle-title">
+  <title id="cycle-title">1回の更新は、きっかけ、レンダー、コミット、ブラウザの描画の順に進み、次の操作でまた最初に戻る</title>
+  <defs>
+    <marker id="cycle-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <g fill="#f6f8fa" stroke="#1f2328" strokeWidth="2">
+    <rect x="10" y="10" width="700" height="100" rx="6" />
+    <rect x="10" y="125" width="700" height="170" rx="6" />
+    <rect x="10" y="310" width="700" height="100" rx="6" />
+    <rect x="10" y="425" width="700" height="100" rx="6" />
+  </g>
+  <g stroke="#1f2328" strokeWidth="1.5" strokeDasharray="5 4">
+    <path d="M178 10 V110" />
+    <path d="M178 125 V295" />
+    <path d="M178 310 V410" />
+    <path d="M178 425 V525" />
+  </g>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="2">
+    <rect x="195" y="35" width="190" height="50" rx="4" />
+    <rect x="435" y="35" width="250" height="50" rx="4" />
+    <rect x="195" y="145" width="490" height="50" rx="4" />
+    <rect x="195" y="225" width="490" height="50" rx="4" />
+    <rect x="195" y="335" width="490" height="50" rx="4" />
+    <rect x="195" y="450" width="490" height="50" rx="4" />
+  </g>
+  <g fill="none" stroke="#1f2328" strokeWidth="2" markerEnd="url(#cycle-arrow)">
+    <path d="M385 60 H432" />
+    <path d="M560 85 V142" />
+    <path d="M440 195 V222" />
+    <path d="M440 275 V332" />
+    <path d="M440 385 V447" />
+    <path d="M710 475 H738 V60 H714" strokeDasharray="7 5" />
+  </g>
+  <g fontSize="20" fontWeight="bold" fill="#1f2328" textAnchor="middle">
+    <text x="94" y="56">きっかけ</text>
+    <text x="94" y="206">レンダー</text>
+    <text x="94" y="356">コミット</text>
+    <text x="94" y="471">ブラウザの</text>
+    <text x="94" y="497">描画</text>
+  </g>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="94" y="84">（トリガー）</text>
+    <text x="94" y="234">（計算する）</text>
+    <text x="94" y="384">（DOMに書く）</text>
+    <text x="290" y="66">ボタンを押す</text>
+    <text x="560" y="66">setLoans でデータを替える</text>
+    <text x="440" y="176">view() で、画面のオブジェクトを作り直す</text>
+    <text x="440" y="256">前回のオブジェクトと見比べて、違いを割り出す</text>
+    <text x="440" y="366">違っていたところだけ、DOMに書く</text>
+    <text x="440" y="481">画面を描き直す（レイアウト → ペイント）</text>
+    <text x="380" y="553">点線の矢印：次の操作を待って、最初に戻る</text>
+  </g>
+</svg>
+
+<p className="caption">図：1回の更新の流れ。左の太字が段階の名前、右がその段階で起きること。</p>
+
+Reactも、この順に進みます。<Term>トリガー</Term>（きっかけ）、レンダー、コミットの3つがReactの仕事で、最後の描画はブラウザの仕事です（0-1で見た、レイアウトからペイントへの流れです）。
+
+この図から読み取ってほしいことは、2つです。
+
+- レンダーは計算で、DOMに書くのはコミットです。レンダーしたからといって、DOMが変わるとは限りません。
+- アプリのコードが関わるのは、上の2段（データを替えることと、`view()` を書くこと）だけです。下の2段は、アプリからは見えないところで進みます。
+
+ミニReactは、見比べながらその場でDOMに書くので、レンダーとコミットがはっきり分かれていません。Reactでは、この2つが別々の段階になっています。それぞれが「いつ」起きるのかは、Reactを使い始めてから、もう一度この図に戻って確かめます。
+
 ## よくある誤解
 
 <Misconception wrong="仮想DOMがあるから、Reactは速い。">
