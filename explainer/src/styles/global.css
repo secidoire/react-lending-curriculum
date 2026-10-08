@@ -325,3 +325,88 @@ svg.diagram {
     border-bottom: 1px solid var(--line);
   }
 }
+
+/* ページの中で動かす例 */
+.live-example {
+  border-style: solid;
+  border-color: var(--text);
+}
+
+.live-example .box-label {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em 1em;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.live-example button,
+.live-example input,
+.live-example select {
+  padding: 0.2em 0.6em;
+  font: inherit;
+}
+
+.live-example-reset {
+  font-weight: normal;
+}
+
+.live-example table {
+  margin: 0.5em 0;
+}
+
+.loan-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em 1em;
+  align-items: center;
+  margin: 0.5em 0;
+}
+
+.loan-summary {
+  margin: 0.25em 0;
+  font-weight: bold;
+}
+
+.pane-label {
+  margin: 1em 0 0.25em;
+  color: var(--muted);
+  font-size: 0.875em;
+  font-weight: bold;
+}
+
+.pane {
+  margin: 0;
+  padding: 0.5em 0.75em;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+pre.pane {
+  font-size: 0.875em;
+}
+
+.scroll-pane {
+  max-height: 9em;
+  overflow-y: auto;
+}
+
+.dom-line.changed {
+  background: #fff8c5;
+  font-weight: bold;
+}
+
+.changed-mark {
+  margin-left: 1.5em;
+  color: var(--warning);
+  font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+}
+
+/* 0-1：色と幅の例 */
+.colored {
+  background: #ffe08a;
+}
+
+.wide {
+  width: 22em;
+}

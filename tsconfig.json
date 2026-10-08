@@ -1,9 +1,8 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "allowJs": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["vitest.config.ts", "explainer", "handson"],
+  "include": ["vitest.config.ts", "explainer"],
   "exclude": ["**/node_modules", "**/dist"]
 }

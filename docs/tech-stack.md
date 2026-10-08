@@ -18,18 +18,18 @@
 | @shikijs/rehype | 導入時の最新安定版で固定する |
 | @types/mdx | 導入時の最新安定版で固定する |
 
-## handson/part1 第7回で追加
+## 第7回で追加（React Compilerをページ内の例で見せる場合。導入のしかたは第7回の着手時に決める）
 | パッケージ | 指定 |
 |---|---|
 | babel-plugin-react-compiler / @rolldown/plugin-babel | `reactCompilerPreset` を使う（react.devの手順に従う） |
 
 ## 判断1：React Compiler
-- `handson/part1`：第1〜6回はOFF、第7回でONにしてDevToolsで差分を観察させる。第6回までは「レンダー中に計算する」だけを教え、useMemo/useCallbackは第7回でエスケープハッチとして紹介する。
-- `explainer`：常にOFF。デモで再レンダリングの回数や参照の変化を見せるため。
+- `explainer`：常にOFF。例やデモで再レンダリングの回数や参照の変化を見せるため。
+- 第6回までは「レンダー中に計算する」だけを教え、useMemo/useCallbackは第7回でエスケープハッチとして紹介する。CompilerをONにしたときの違いをどう見せるかは、第7回の着手時に決める。
 - Compiler由来のlintルールは、どちらも初回から有効にする。
 
 ## 判断2：テスト
-- ドメインとデモのロジックはnode環境で、時刻を注入してテストする。
+- ドメインと、例・デモのロジックはnode環境で、時刻を注入してテストする。
 - コンポーネントはBrowser Modeで、`render`はasync、検証は`expect.element(...)`を使う。
 - 社内PCにPlaywrightを入れにくい場合は、jsdom + @testing-library/reactでもかまわない。
 

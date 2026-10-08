@@ -1,4 +1,5 @@
 import { DocLink } from './DocLink';
+import { LiveExample } from './LiveExample';
 import { Misconception } from './Misconception';
 import { Preview } from './Preview';
 import { Question } from './Question';
@@ -7,4 +8,4 @@ import { Steps } from './Steps';
 import { Term } from './Term';
 
 // 各回のMDXから、importを書かずに使えるコンポーネント。
-export const mdxComponents = { DocLink, Misconception, Preview, Question, Reveal, Steps, Term };
+export const mdxComponents = { DocLink, LiveExample, Misconception, Preview, Question, Reveal, Steps, Term };

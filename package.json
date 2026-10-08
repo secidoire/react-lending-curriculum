@@ -6,18 +6,13 @@
     "node": ">=22.12"
   },
   "workspaces": [
-    "explainer",
-    "handson/part1/my-app",
-    "handson/part1/shared-test-utils",
-    "handson/part1/sessions/*/starter",
-    "handson/part1/sessions/*/solution"
+    "explainer"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
     "test": "vitest run --project node",
     "test:browser": "vitest run --project browser",
-    "test:starter": "vitest run --mode starter",
     "test:watch": "vitest"
   },
   "devDependencies": {

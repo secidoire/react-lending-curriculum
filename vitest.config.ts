@@ -6,20 +6,20 @@ import { mdxPlugin } from './explainer/mdx.config.ts';
 const exclude = ['**/node_modules/**', '**/dist/**'];
 
 // 拡張子で実行環境を分ける。
-//   *.test.ts         … ドメイン（node環境。時刻は引数で注入する）
+//   *.test.ts         … 純粋関数（node環境。時刻は引数で注入する）
 //   *.test.tsx        … コンポーネント（Browser Mode + vitest-browser-react）
-//   *.browser.test.ts … Reactを使わずDOMを触るコード（第0部の素のJS。Browser Mode）
+//   *.browser.test.ts … Reactを使わずDOMを触るコード（ページ内の素のJSの例。Browser Mode）
 const browserOnly = '**/*.browser.test.ts';
+
 export default defineConfig({
   test: {
-    // 回のファイルがまだ無い段階でもコマンドが通るようにする。
     passWithNoTests: true,
     projects: [
       {
         test: {
           name: 'node',
           environment: 'node',
-          include: ['handson/**/*.test.ts', 'explainer/**/*.test.ts'],
+          include: ['explainer/**/*.test.ts'],
           exclude: [...exclude, browserOnly],
         },
       },
@@ -32,9 +32,9 @@ export default defineConfig({
         },
         test: {
           name: 'browser',
-          include: ['handson/**/*.test.tsx', 'explainer/**/*.test.tsx', `handson/${browserOnly}`],
+          include: ['explainer/**/*.test.tsx', `explainer/${browserOnly}`],
           exclude,
-          // 要素が見つからないときに待つ時間。既定（15秒）のままだと、未実装のstarterで全件落ちるまでに数分かかる。
+          // 要素が見つからないときに待つ時間。既定（15秒）のままだと、失敗したときの待ちが長すぎる。
           expect: { poll: { timeout: 2000 } },
           browser: {
             enabled: true,

@@ -25,20 +25,10 @@ export default defineConfig([
     extends: [reactHooks.configs.flat.recommended],
   },
 
-  // ブラウザで動くコード（素のJS、ミニReact、Reactアプリ、解説ページ）
+  // ブラウザで動くコード（解説ページと、その中で動かす例）
   {
-    files: ['handson/**', 'explainer/**'],
+    files: ['explainer/**'],
     languageOptions: { globals: globals.browser },
-  },
-
-  // starter には、引数だけ決めて中身が未実装の関数がある。
-  {
-    files: ['handson/**/starter/**/*.{js,jsx}'],
-    rules: { 'no-unused-vars': ['error', { args: 'none' }] },
-  },
-  {
-    files: ['handson/**/starter/**/*.{ts,tsx}'],
-    rules: { '@typescript-eslint/no-unused-vars': ['error', { args: 'none' }] },
   },
 
   // Node で動く設定ファイル

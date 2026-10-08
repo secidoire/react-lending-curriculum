@@ -1,3 +1,7 @@
+import { startListWithBugs } from '../examples/0-2/bad-examples/listWithBugs'
+import { startManual } from '../examples/0-2/manual'
+import { startRerender } from '../examples/0-2/rerender'
+
 export const title = '素のJSで貸出一覧'
 
 ## 前回の予告を確かめよう
@@ -7,69 +11,100 @@ export const title = '素のJSで貸出一覧'
 
 <Question>
 追加と削除ができるようになったら、件数を数え直すコードは、どこに何か所書くことになりそうですか。
-予想した数を、口に出してから先へ進みます。
+予想した数を決めてから、先へ進みます。
 </Question>
 
 ## この一覧、どこがおかしい？
 
-先に、できあがったように見える一覧を触ってみます。コードは開かず、画面の操作だけで調べます。
+総務の田中さんの依頼で、貸出一覧に機能を足しました。貸出の追加と削除、「貸出中のみ」の絞り込み、件数の表示です。
+フレームワークは使わず、ブラウザに最初からあるDOMのAPIだけで書いてあります。
 
-```bash
-npx vite handson/part0/0-2-vanilla-list/bad-examples/list-with-bugs
-```
+<LiveExample label="動かしてみよう：できあがったように見える一覧" start={startListWithBugs} />
 
-表示されたURLを開くと、追加も、削除も、「貸出中のみ表示」も、ひととおり動いているように見えます。
-ところが、この一覧には、画面の表示が食い違う操作が2つあります。
+追加も、削除も、「貸出中のみ表示」も、ひととおり動いているように見えます。
+ところが、この一覧には、操作のあとで画面の中の表示どうしが合わなくなる操作が2つあります。
 
 <Question>
-5分で、画面の表示が食い違う操作を2つ見つけてください。
+画面の中の表示どうしが合わなくなる操作を、2つ見つけてください。操作のたびに、画面のすべての場所を見比べます。
 見つけたら、「何をして、何が、どうおかしくなったか」を言葉にします。
 </Question>
 
 <Reveal label="見つからなかったら開く">
 
-- どれかの行を削除して、表の上の件数を見る。
-- 「貸出中のみ表示」にチェックを入れたまま、状態を「予約中」にして追加する。
+- どれかの行を削除する。行は消えるのに、表の上の件数は「全3件」のまま変わらない。
+- 「貸出中のみ表示」にチェックを入れたまま、状態を「予約中」にして追加する。貸出中だけを見せているはずなのに、予約中の行が出てくる。
 
 </Reveal>
 
-## なぜ、押したところ以外がずれる？
+## なぜ、表示どうしが合わなくなる？
 
-どちらの操作でも、押したボタンの仕事（行を消す・行を足す）は正しく行われていました。
+どちらの操作でも、行を消す・行を足すという仕事そのものは、正しく行われていました。
 
 <Question>
-ずれたのは、どちらも「押したところとは別の場所」でした。
-この2つに共通している原因を、予想してください。
+2つのバグに共通している原因を、予想してください。
+答え合わせは、次の節でコードを読んでから行います。
 </Question>
 
-## お題
+## コードのどこが足りない？
 
-同じ一覧を、自分の手で作ります。作りながら、さっきの2つと同じことが自分のコードで起きないかを確かめます。
+この一覧のコードを読みます。まず、削除ボタンを押したときの処理です。
 
-- お題：`handson/part0/0-2-vanilla-list/README.md`
-- ふり返りを書き込むファイル：`handson/part0/0-2-vanilla-list/starter/notes.md`
+```ts
+deleteButton.addEventListener('click', () => {
+  loans.splice(loans.indexOf(loan), 1);
+  row.remove();
+});
+```
 
-## 操作のたびに、何か所を直した？
+`loans` は貸出を入れた配列、`loan` はこの行の貸出、`row` はこの行の要素（`<tr>`）です。配列から1件取り除き、行をDOMから取り除いています。
 
-お題の6で、操作ごとに書き換えているものを表に書き出しました。
+次に、「追加」を押したときの処理です。ここでの `loan` は、フォームの入力から作った新しい貸出です。
+
+```ts
+loans.push(loan);
+addRow(loan);
+updateSummary();
+```
+
+`addRow` は、行を作って表の最後に足す関数です。`updateSummary` は、件数を数え直して表示する関数です。
+
+最後に、「貸出中のみ表示」を切り替えたときの処理です。
+
+```ts
+lentOnly.addEventListener('change', () => {
+  for (const row of tbody.rows) {
+    row.hidden = lentOnly.checked && row.dataset.status !== 'lent';
+  }
+});
+```
+
+`lentOnly` はチェックボックスの要素で、`lentOnly.checked` でチェックの有無を読めます。`tbody` は表の行を入れる要素、`tbody.rows` はいま表にあるすべての行です。
+`row.hidden = true` にすると、その行はDOMに残ったまま見えなくなります。`'lent'` は「貸出中」を表す値で、行を作るときに `row.dataset.status` に入れてあります。
 
 <Question>
-書き換えているものがいちばん多い操作は、どれでしたか。
-件数の表示を足したとき、書き換えたのは何か所でしたか。最初の予想と比べてください。
+2つのバグを直すには、それぞれどこに、何を足せばよいでしょうか。
 </Question>
 
 <Reveal>
 
-操作ごとに、変わったところだけDOMを直す書き方を、ここではA版と呼びます（`solution/a-manual/`）。
-A版では、たとえば「追加」のときに直す場所が4つあります。印の行が、その4つです。
+削除の処理には、件数の数え直しが足りません。
 
-```js {1,3,4,5}
-loans.push(loan);
-const row = createRow(loan);
-row.hidden = isHiddenByFilter(loan.status);
-tbody.append(row);
-updateSummary();
+```ts {4}
+deleteButton.addEventListener('click', () => {
+  loans.splice(loans.indexOf(loan), 1);
+  row.remove();
+  updateSummary();
+});
 ```
+
+追加の処理には、絞り込みの確認が足りません。`addRow` の中で、行を足す前に、隠すかどうかを決めます。
+
+```ts {1}
+row.hidden = lentOnly.checked && loan.status !== 'lent';
+tbody.append(row);
+```
+
+この2つを直した版を、ここではA版と呼びます。A版では、操作のたびに、次の場所を自分で直しています。
 
 <svg className="diagram" viewBox="0 0 760 235" role="img" aria-labelledby="manual-title">
   <title id="manual-title">操作ごとにDOMを直す書き方では、追加は4か所、削除は3か所、絞り込みは1か所を、それぞれ自分で直す</title>
@@ -114,8 +149,9 @@ updateSummary();
 貸出の一覧は、配列 `loans` の中にあります。同じ一覧が、表の行としてDOMの中にもあります。
 同じ情報が2か所にあるので、操作のたびに両方を直す必要があり、片方を直し忘れると画面がずれます。
 
-最初に触った一覧の2つのバグは、どちらもこの直し忘れでした。削除のときに件数を直していないことと、追加のときに絞り込みを見ていないことです。
-件数の表示を足すとき、A版で書き換えるのは3か所（最初の表示・追加・削除）です。
+2つのバグは、どちらもこの直し忘れでした。ボタンの仕事は合っていたのに、別の場所の表示を直していなかったのです。
+
+冒頭の予想の答えも出ました。件数の表示を保つために `updateSummary()` を書くのは、最初の表示・追加・削除の3か所です。機能を1つ足すたびに、図の矢印が増えていきます。
 
 画面を決めるデータを<Term>状態</Term>、同じ状態を2か所に持つことを<Term>二重管理</Term>と呼びます。
 
@@ -123,35 +159,40 @@ updateSummary();
 
 ## 直す場所を、1か所にできる？
 
-A版では、機能を1つ足すたびに、図の矢印が増えていきます。
+この書き方では、機能を1つ足すたびに、書き忘れてはいけないコードが増えていきます。
 
 <Question>
-矢印を増やさずに済む書き方はないでしょうか。
+書き忘れてはいけないコードを増やさずに済む書き方はないでしょうか。
 ヒント：操作のたびに「変わったところ」を探すのをやめたら、どう書けるでしょうか。
 </Question>
 
 <Reveal>
 
-操作ではデータだけを直し、画面はデータから毎回すべて作り直します。これをB版と呼びます（`solution/b-render/`）。
+操作ではデータだけを直し、画面はデータから毎回すべて作り直します。これをB版と呼びます。
 
-```js {2,3}
+```ts {2,3}
 deleteButton.addEventListener('click', () => {
   loans = loans.filter((other) => other !== loan);
   render();
 });
 ```
 
-どの操作も、この形です。データ（`loans` と、絞り込み中かどうかの `lentOnly`）を直して、`render()` を呼びます。
+どの操作も、この形です。データを直して、`render()` を呼びます。データは、貸出の配列 `loans` と、絞り込み中かどうかの `lentOnly` の2つです。
+B版の `lentOnly` は、チェックボックスの要素ではなく、`true` か `false` の値です。チェックボックスが切り替わったときに、この値を書き換えます。
 
-```js {5,6}
+`render()` は、いまのデータから画面を作り直す関数です。
+
+```ts {4,5}
 function render() {
-  const lentLoans = loans.filter((loan) => loan.status === 'lent');
-  const visibleLoans = lentOnly ? lentLoans : loans;
+  const visibleLoans = lentOnly ? loans.filter((loan) => loan.status === 'lent') : loans;
 
-  summary.textContent = `全${loans.length}件・貸出中${lentLoans.length}件`;
-  tbody.replaceChildren(...visibleLoans.map(createRow));
+  summary.textContent = summaryText(loans);
+  tbody.replaceChildren(...visibleLoans.map(createRowFor));
 }
 ```
+
+`summaryText` は「全3件・貸出中1件」の文字を作る関数、`createRowFor` は1件の貸出から行を作る関数です。
+`replaceChildren` は、表の行をすべて捨てて、渡した行に入れ替えます。
 
 <svg className="diagram" viewBox="0 0 760 200" role="img" aria-labelledby="render-title">
   <title id="render-title">全部作り直す書き方では、どの操作もデータだけを直し、画面は render がデータから作り直す</title>
@@ -189,6 +230,7 @@ function render() {
 
 <p className="caption">図：B版。操作から画面へ直接のびる矢印がない。</p>
 
+DOMにも行はありますが、それはデータから作った写しで、いつでも作り直せます。直すべき元はデータの1か所だけになりました。
 絞り込みも件数も、`render()` がいまのデータから毎回計算します。「この操作のときは、どこを直すんだっけ」と覚えておく必要がなくなります。
 件数の表示を足すときに書き換えるのは、`render()` の中の1か所だけです。
 
@@ -196,18 +238,18 @@ function render() {
 
 ## 全部作り直すと、何が失われる？
 
-B版を開いて、次の順に操作します。
-
-```bash
-npx vite handson/part0/0-2-vanilla-list/solution/b-render
-```
+B版にも、困ることがあります。下の2つの一覧で、同じ操作をして比べます。
 
 1. 「リーダブルコード」のメモ欄に、何か文字を入力する。
 2. 「プロジェクター」の行の「削除」を押す。
 
+<LiveExample label="動かしてみよう：B版（全部作り直す）" start={startRerender} />
+
+<LiveExample label="動かしてみよう：A版（変わったところだけ直す）" start={startManual} />
+
 <Question>
-メモ欄はどうなりましたか。A版（`solution/a-manual/`、または自分のコード）で同じ操作をすると、どうなりますか。
-違いが出る理由を、前回（0-1）の最後の問い（`innerHTML` でまるごと作り直すと何が失われる？）と結びつけて説明してください。
+メモ欄は、それぞれどうなりましたか。
+違いが出る理由を、前回の最後の問い（`innerHTML` でまるごと作り直すと何が失われる？）と結びつけて説明してください。
 </Question>
 
 <Reveal>
@@ -217,28 +259,27 @@ B版では、入力した文字が消えます。A版では残ります。
 `render()` は、行をすべて捨てて、新しい行を作り直しています。メモ欄も、見た目が同じだけの新しい入力欄に置き換わりました。
 入力中の文字は、データ（`loans`）には入っておらず、DOMの要素だけが持っていました。だから、要素を捨てると一緒に消えます。
 
-これが、前回の最後の問いの答えです。どの入力欄にカーソルがあるか（フォーカス）も、同じようにDOMの要素だけが持っています。次回、入力している最中に画面が作り直される場面で確かめます。
+これが、前回の最後の問いの答えです。`replaceChildren` での入れ替えも、`innerHTML` での作り直しも、いまある要素を捨てて新しく作る点は同じです。どの入力欄にカーソルがあるか（フォーカス）も、同じようにDOMの要素だけが持っています。次回、入力している最中に画面が作り直される場面で確かめます。
 
 </Reveal>
 
-## 模範解答の要点
+## 今日の要点
 
 <Question>
-レビューの問いです。「返却期限を過ぎた貸出に『延滞』と表示する」という依頼が来たら、A版とB版で、それぞれ何か所を直すことになるでしょうか。
+「返却期限を過ぎた貸出に『延滞』と表示する」という依頼が来たら、A版とB版で、それぞれ何か所を直すことになるでしょうか。
 </Question>
 
-<Reveal label="模範解答と要点を見る">
+<Reveal label="要点を見る">
 
-模範解答は2つあります。どちらもテストは全件通ります。
-
-| | A版 `solution/a-manual/` | B版 `solution/b-render/` |
+| | A版 | B版 |
 |---|---|---|
 | 書き方 | 操作ごとに、変わったところだけDOMを直す | 操作ではデータだけ直し、画面は全部作り直す |
 | 表示を足すときに書き換える場所 | その表示に関わる操作すべて | `render()` の中の1か所 |
-| 起きやすいバグ | 直し忘れで、データと画面がずれる | `render()` を呼び忘れない限り、ずれない |
+| 起きやすいバグ | 操作ごとの直し忘れ（何種類もある） | `render()` の呼び忘れ（1種類だけ） |
 | 失うもの | なし | DOMの要素だけが持っていたもの（入力中の文字など） |
 
-延滞の表示を足す場合、B版は `render()` が呼ぶ「行を作るところ」の1か所に書けば、どの操作のあとにも反映されます。A版は、行を作るところに加えて、表示を直しているほかの場所もすべて見直すことになります。
+行に「延滞」と出すだけなら、どちらの版も、行を作るところの1か所です。
+違いが出るのは、その表示が変わるきっかけが増えたときです。たとえば「返却」の操作が入ると、A版では、その操作の中で行の延滞表示も、件数も、絞り込みも直す必要があります。B版では、データを直して `render()` を呼ぶだけです。
 
 どちらの版にも残る問いがあります。延滞は、誰も操作しなくても、時間が経つだけで起きます。そのとき、誰が画面を直すのでしょうか。これは先の回で扱います。
 
@@ -267,11 +308,11 @@ B版では、入力した文字が消えます。A版では残ります。
 
 - <DocLink href="https://developer.mozilla.org/ja/docs/Web/API/Document/createElement">MDN：Document.createElement()</DocLink>（要素を作る）
 - <DocLink href="https://developer.mozilla.org/ja/docs/Web/API/Element/replaceChildren">MDN：Element.replaceChildren()</DocLink>（子をまとめて入れ替える。B版の `render()` で使っている）
-- <DocLink href="https://react.dev/learn/reacting-to-input-with-state">react.dev：Reacting to Input with State</DocLink>（今日のA版とB版の違いを、Reactの側から説明したページ。第1部に入ってから読み返す）
+- <DocLink href="https://ja.react.dev/learn/reacting-to-input-with-state">react.dev：state を使って入力に反応する</DocLink>（最初の節「宣言型 UI と命令型 UI の比較」が、今日のA版とB版の違いにあたる。「命令型」と呼ばれているのがA版の書き方。Reactのコードが出てくる後半は、第1部に入ってから読めば足りる）
 
 ## 今日の一文
 
-今日わかったことを、自分の言葉で1文にして `notes.md` の最後に書いてください。
+今日わかったことを、自分の言葉で1文にしてください。書けたら、例と見比べます。
 
 <Reveal label="例を見る">
 
@@ -287,6 +328,6 @@ B版では、入力した文字が消えます。A版では残ります。
 次回は、B版の「データだけを直す」書き方を変えずに、この依頼に応えます。
 
 <Question>
-「プロジェクター」の行を削除する前と後の画面を見比べてください。
+B版で「プロジェクター」の行を削除する前と後の画面を見比べてください。
 DOMの中で、本当に変える必要があったのはどこでしょうか。変えなくてよかったのはどこでしょうか。
 </Question>
