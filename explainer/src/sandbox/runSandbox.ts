@@ -9,6 +9,13 @@ import type { SandboxFile, SandboxSpec } from './types';
 type Module = { exports: Record<string, unknown> };
 type Cleanup = () => void;
 
+export type SandboxListeners = {
+  /** Reactが描いている途中で起きたエラー */
+  onError?: (error: unknown) => void;
+  /** 例のコードが console.log で出した1行 */
+  onLog?: (line: string) => void;
+};
+
 // 例のコードが import できる、枠の外のライブラリ。
 const LIBRARIES: Record<string, unknown> = {
   react: React,
@@ -29,7 +36,17 @@ export function runSandbox(
   files: readonly SandboxFile[],
   entry: string,
   jsxPragma?: string,
+  onLog?: (line: string) => void,
 ): Record<string, unknown> {
+  // 例の中の console.log は、ブラウザのコンソールに加えて、枠の「コンソール」欄にも出す。
+  const sandboxConsole = {
+    ...console,
+    log(...values: unknown[]) {
+      console.log(...values);
+      onLog?.(values.map(String).join(' '));
+    },
+  };
+
   const sources = new Map(files.map((file) => [moduleName(file.name), file.code]));
   const loaded = new Map<string, Module>();
 
@@ -55,7 +72,7 @@ export function runSandbox(
       ...(jsxPragma === undefined ? { jsxRuntime: 'automatic' } : { jsxRuntime: 'classic', jsxPragma }),
     });
     // 書き換えられたコードを実行するために、文字列から関数を作る。読者が自分のブラウザで自分のコードを動かすだけなので許している。
-    new Function('require', 'module', 'exports', code)(require, module, module.exports);
+    new Function('require', 'module', 'exports', 'console', code)(require, module, module.exports, sandboxConsole);
     return module.exports;
   }
 
@@ -66,14 +83,13 @@ export function runSandbox(
 function noop() {}
 
 // 例を root の中で動かす。戻り値は、後片づけの関数（次に実行し直す前と、枠が消えるときに呼ぶ）。
-// onError には、Reactが描いている途中で起きたエラーが渡される。
 export function startSandbox(
   spec: Omit<SandboxSpec, 'files'>,
   files: readonly SandboxFile[],
   root: HTMLElement,
-  onError: (error: unknown) => void = noop,
+  { onError = noop, onLog }: SandboxListeners = {},
 ): Cleanup {
-  const exported = runSandbox(files, spec.entry, spec.jsxPragma);
+  const exported = runSandbox(files, spec.entry, spec.jsxPragma, onLog);
   // 実行のたびに新しい入れ物を作る。前の実行が残したものと混ざらないようにするため。
   const host = document.createElement('div');
   root.replaceChildren(host);

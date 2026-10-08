@@ -671,3 +671,47 @@ pre.pane {
   font-size: 0.875em;
   font-weight: bold;
 }
+
+/* 枠のコンソール欄 */
+.sandbox-console {
+  margin-top: 1em;
+  padding-top: 0.5em;
+  border-top: 1px dashed var(--line);
+}
+
+.sandbox-console ol {
+  max-height: 12em;
+  margin: 0;
+  padding-left: 2.5em;
+  overflow-y: auto;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.875em;
+}
+
+.sandbox-console button {
+  padding: 0 0.5em;
+  font: inherit;
+  font-weight: normal;
+}
+
+/* 第1回：カテゴリと状態の表示 */
+.badge {
+  display: inline-block;
+  padding: 0 0.6em;
+  border: 1px solid var(--text);
+  border-radius: 999px;
+  font-size: 0.875em;
+}
+
+.badge-book {
+  border-style: solid;
+}
+
+.badge-equipment {
+  border-style: dashed;
+}
+
+.row-selected {
+  background: #ddf4ff;
+  font-weight: bold;
+}

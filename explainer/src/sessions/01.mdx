@@ -1,0 +1,341 @@
+import { allInOneSandbox, itemsPageSandbox, selectableListSandbox } from '../examples/01/sandboxes'
+
+export const title = '備品一覧とコンポーネント分割'
+
+## 前回の予告を確かめよう
+
+今回から、本物のReactで貸出管理アプリを作ります。最初は、備品の一覧です。
+
+<Question>
+画面のすべてを1つのコンポーネント（1つの関数）に書いたとします。
+「表示している言葉を1つ変えてほしい」と頼まれたら、直す場所は1か所で済むでしょうか。予想を決めてから、先へ進みます。
+</Question>
+
+## 「備品」を「機材」に変えるには、何か所を直す？
+
+備品の一覧ができました。件数、一覧の表、いま貸出中のもの、の3つを表示しています。コードは、`AllInOne.tsx` の1つのコンポーネントに全部書いてあります。
+そこへ、総務の田中さんから依頼が来ました。「『備品』という呼び方を、『機材』に変えてください。」
+
+<Sandbox spec={allInOneSandbox} />
+
+<Question>
+左のコードを書き換えて、画面の「備品」をすべて「機材」に変えてください。
+直したのは、何か所でしたか。直し忘れがないことを、どうやって確かめましたか。
+</Question>
+
+<Reveal>
+
+直す場所は3か所です。件数のところ、表の「種類」の列、貸出中のものの一覧です。
+画面では同じ「備品」という表示なのに、コードでは3か所に書かれていて、3つ目は書き方も違います。1か所を直しても、残りは古いままです。
+コードを「備品」で検索すれば見つかりますが、見つかったものが直してよい「備品」かどうかは、1つずつ読んで確かめることになります。
+
+これは、0-2で見た「同じ情報が2か所にある」と同じ形の困りごとです。今度は、データではなく、表示のしかたが何か所にも書かれています。
+種類が1つ増えたら（たとえば「消耗品」）、同じ3か所をまた直すことになります。
+
+</Reveal>
+
+## 同じ表示を、1か所に書くには？
+
+<Question>
+「種類の表示」を1か所にだけ書いて、3つの場所から使い回すには、どうすればよいでしょうか。
+ふつうのJavaScriptで、同じ処理を何度も使いたいときにすることを思い出してください。
+</Question>
+
+<Reveal>
+
+関数にします。Reactでは、画面の一部を返す関数を<Term>コンポーネント</Term>と呼びます。種類の表示を、`CategoryBadge` というコンポーネントにします。
+
+```tsx
+type Props = { category: Category };
+
+export function CategoryBadge({ category }: Props) {
+  if (category === 'book') {
+    return <span className="badge badge-book">本</span>;
+  }
+  return <span className="badge badge-equipment">備品</span>;
+}
+```
+
+使う側は、HTMLのタグと同じように書きます。
+
+```tsx
+<CategoryBadge category={item.category} />
+```
+
+タグに書いた属性（`category={...}`）は、1つのオブジェクトにまとめられて、関数の引数として渡されます。この引数を<Term>props</Term>と呼びます。`{ category }: Props` は、そのオブジェクトから `category` を取り出しています。
+
+コンポーネントの名前は、大文字で始めます。JSXが関数呼び出しに書き換えられるとき、小文字で始まるタグ（`<span>`）は文字列の `'span'` になり、大文字で始まるタグ（`<CategoryBadge>`）は `CategoryBadge` という関数そのものになります。この違いで、HTMLの要素と自分で作ったコンポーネントが区別されます。
+
+`CategoryBadge` の中では、`if` で返すJSXを切り替えています。条件によって表示を変えることを、<Term>条件付きレンダー</Term>と呼びます。JSXの波括弧の中には `if` を書けないので（0-3で見たとおりです）、JSXの外で `if` を使うか、波括弧の中で `条件 ? A : B` を使います。
+
+</Reveal>
+
+## 画面全体を、部品に分けると？
+
+同じ考え方で、画面全体をコンポーネントに分けました。表示は、上の枠とほぼ同じです（貸出中の一覧の種類が、括弧書きからバッジに変わっただけです）。
+
+コンポーネントは、1つのファイルに1つずつ書いてあります。`export function ItemRow` の `export` は、「この関数を、ほかのファイルから使えるようにする」という意味です。使う側は、`import { ItemRow } from './ItemRow'` で読み込みます。
+下の図を見ながら、タブを左から順に開いてください。左のタブほど画面全体に近く、右へ行くほど小さな部品になります。
+
+<Sandbox spec={itemsPageSandbox} />
+
+<svg className="diagram" viewBox="0 0 760 330" role="img" aria-labelledby="tree-title">
+  <title id="tree-title">ItemsPage が ItemList と LentItems を使い、ItemList が ItemRow を、ItemRow が CategoryBadge と StatusCells を使う。データは props で上から下へ渡る</title>
+  <defs>
+    <marker id="tree-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="2">
+    <rect x="300" y="10" width="160" height="40" rx="4" />
+    <rect x="150" y="100" width="160" height="40" rx="4" />
+    <rect x="520" y="100" width="160" height="40" rx="4" />
+    <rect x="150" y="190" width="160" height="40" rx="4" />
+    <rect x="20" y="280" width="170" height="40" rx="4" />
+    <rect x="290" y="280" width="170" height="40" rx="4" />
+  </g>
+  <g fill="none" stroke="#1f2328" strokeWidth="1.5" markerEnd="url(#tree-arrow)">
+    <path d="M340 50 L245 98" />
+    <path d="M420 50 L585 98" />
+    <path d="M230 140 V188" />
+    <path d="M200 230 L120 278" />
+    <path d="M260 230 L360 278" />
+  </g>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="380" y="36">ItemsPage</text>
+    <text x="230" y="126">ItemList</text>
+    <text x="600" y="126">LentItems</text>
+    <text x="230" y="216">ItemRow</text>
+    <text x="105" y="306">CategoryBadge</text>
+    <text x="375" y="306">StatusCells</text>
+    <text x="255" y="72">items</text>
+    <text x="545" y="72">items</text>
+    <text x="330" y="170">item（1件ずつ、5回）</text>
+    <text x="110" y="256">category</text>
+    <text x="350" y="256">lentTo</text>
+  </g>
+</svg>
+
+<p className="caption">図：箱はコンポーネント、矢印は「使っている」、矢印の文字は渡している props。見やすさのために、一部の矢印は省いている。</p>
+
+<Question>
+この枠で、もう一度「備品」を「機材」に変えてください。今度は、どのファイルの何か所を直しましたか。
+`ItemRow.tsx` は、自分が表示する備品のデータを、どこから受け取っているでしょうか。
+</Question>
+
+<Reveal>
+
+直すのは、`CategoryBadge.tsx` の1か所だけです。件数・表・貸出中の一覧の3つの場所が、同時に変わります。`CategoryBadge` は、図に描いた `ItemRow` のほかに、`ItemsPage` と `LentItems` からも使われているからです。
+
+`ItemRow` は、備品のデータを props（`item`）で受け取っています。渡しているのは `ItemList` で、`ItemList` も、一覧のデータ（`items`）を `ItemsPage` から props で受け取っています。
+データは、図の矢印に沿って、上から下へ渡っていきます。コンポーネントが作る、この木の形を<Term>レンダーツリー</Term>と呼びます。
+
+`ItemList` の中の `<ItemRow key={item.id} item={item} />` には、`key` が付いています。0-3で見たとおり、一覧では「前回のどれと、今回のどれが同じものか」をReactに伝える必要があるからです。`key` はReactが対応づけに使うだけで、props としては `ItemRow` に届きません。
+
+分ける基準は、「一緒に変わるものは同じ場所に、別々の理由で変わるものは別の場所に」です。種類の呼び方が変わる理由と、表の列が増える理由は別なので、別のコンポーネントにしています。
+
+</Reveal>
+
+## セルを2つ返したいとき、どう書く？
+
+`StatusCells.tsx` を開いてください。「状態」と「借りている人」の2つのセルを返しています。
+
+```tsx
+export function StatusCells({ lentTo }: Props) {
+  return (
+    <>
+      <td>{lentTo !== null ? '貸出中' : '貸出できます'}</td>
+      <td>{lentTo !== null ? `${lentTo}さん` : '—'}</td>
+    </>
+  );
+}
+```
+
+<Question>
+0-3で、「関数が `return` できるJSXは、いちばん外側の要素が1つだけ」という決まりを見ました。
+ここで、2つの `<td>` を `<div>` で包まずに `<>…</>` で包んでいるのは、なぜでしょうか。
+`<div>` で包んだとすると、できあがるHTMLでは、表の行（`<tr>`）の中身はどうなるでしょうか。
+</Question>
+
+<Reveal>
+
+表の行（`<tr>`）の直下に置けるのは、セル（`<td>` や `<th>`）だけです。`<div>` で包むと、`<tr>` の中に `<div>` が入ることになり、表として正しくないHTMLになります。ブラウザがそれをどう表示するかは保証されず、読み上げソフトも表として正しく読めなくなります。
+
+`<>…</>` は<Term>フラグメント</Term>と呼ぶ入れ物です。「外側は1つ」という決まりは満たしますが、DOMには何も残りません。できあがるDOMでは、2つの `<td>` が `<tr>` の直下に並びます。
+
+`LentItems.tsx` でも、`<p>` と `<ul>` を並べて返すために使っています。`LentItems` は、貸出中のものが1件もなければ `null` を返します。コンポーネントが `null` を返すと、その場所には何も表示されません。
+
+</Reveal>
+
+## 1行選ぶと、どのコンポーネントが呼ばれる？
+
+次は、行を1つ選べる一覧です。どの行が選ばれているかを、`SelectableList` が state（`selectedId`）として持っています。
+`SelectableList` と `SelectableRow` は、自分が呼ばれるたびに、`console.log` でそのことを知らせます。出力は、実行結果の下の「コンソール」に出ます。
+
+この例には、新しい書き方が2つあります。
+
+- `onSelect={() => setSelectedId(item.id)}`：props には、関数も渡せます。`SelectableRow` は、「選ぶ」が押されたら、受け取った `onSelect` を呼びます。こうして、子のボタンから、親が持っている state を替えられます。
+- `{selected && '選択中'}`：`selected` が `true` のときだけ「選択中」と表示します。`false` のときは、何も表示されません。
+
+<Sandbox spec={selectableListSandbox} />
+
+1. 「プロジェクター」のメモ欄に、何か文字を入力する。
+2. コンソールの「消す」を押す。
+3. 「リーダブルコード」の行の「選ぶ」を押す。
+
+<Question>
+コンソールには、何行出ましたか。呼ばれたコンポーネントは、どれとどれでしたか。
+「プロジェクター」の行は、選ぶ前と後で、表示が変わっていません。この行の `SelectableRow` は、呼ばれたでしょうか。
+呼ばれたとしたら、入力したメモが消えなかったのは、なぜでしょうか。
+</Question>
+
+<Reveal>
+
+4行出ます。`SelectableList` と、3つの行すべての `SelectableRow` が呼ばれています。
+
+state を持っているのは `SelectableList` です。`setSelectedId` で state が新しい値に替わると、Reactは `SelectableList` を呼び直します。その中で3つの `<SelectableRow>` が返されるので、Reactはそれぞれの `SelectableRow` も呼び直します。
+コンポーネントの関数がもう一度呼ばれることを、<Term>再レンダー</Term>と呼びます。親が再レンダーされると、特別なことをしない限り、その中の子も再レンダーされます。
+（同じ行の「選ぶ」をもう一度押しても、コンソールには何も出ません。0-4で見たとおり、前と同じ値を `set` しても、何も起きないからです。）
+
+それでもメモが消えなかったのは、再レンダーとDOMの書き換えが、別のものだからです。
+
+<svg className="diagram" viewBox="0 0 760 565" role="img" aria-labelledby="react-cycle-title">
+  <title id="react-cycle-title">Reactの1回の更新は、stateのセットをきっかけに、レンダー、コミット、ブラウザの描画の順に進む</title>
+  <defs>
+    <marker id="react-cycle-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f2328" />
+    </marker>
+  </defs>
+  <g fill="#f6f8fa" stroke="#1f2328" strokeWidth="2">
+    <rect x="10" y="10" width="700" height="100" rx="6" />
+    <rect x="10" y="125" width="700" height="170" rx="6" />
+    <rect x="10" y="310" width="700" height="100" rx="6" />
+    <rect x="10" y="425" width="700" height="100" rx="6" />
+  </g>
+  <g stroke="#1f2328" strokeWidth="1.5" strokeDasharray="5 4">
+    <path d="M178 10 V110" />
+    <path d="M178 125 V295" />
+    <path d="M178 310 V410" />
+    <path d="M178 425 V525" />
+  </g>
+  <g fill="#ffffff" stroke="#1f2328" strokeWidth="2">
+    <rect x="195" y="35" width="190" height="50" rx="4" />
+    <rect x="435" y="35" width="250" height="50" rx="4" />
+    <rect x="195" y="145" width="490" height="50" rx="4" />
+    <rect x="195" y="225" width="490" height="50" rx="4" />
+    <rect x="195" y="335" width="490" height="50" rx="4" />
+    <rect x="195" y="450" width="490" height="50" rx="4" />
+  </g>
+  <g fill="none" stroke="#1f2328" strokeWidth="2" markerEnd="url(#react-cycle-arrow)">
+    <path d="M385 60 H432" />
+    <path d="M560 85 V142" />
+    <path d="M440 195 V222" />
+    <path d="M440 275 V332" />
+    <path d="M440 385 V447" />
+    <path d="M710 475 H738 V60 H714" strokeDasharray="7 5" />
+  </g>
+  <g fontSize="20" fontWeight="bold" fill="#1f2328" textAnchor="middle">
+    <text x="94" y="56">きっかけ</text>
+    <text x="94" y="206">レンダー</text>
+    <text x="94" y="356">コミット</text>
+    <text x="94" y="471">ブラウザの</text>
+    <text x="94" y="497">描画</text>
+  </g>
+  <g fontSize="16" fill="#1f2328" textAnchor="middle">
+    <text x="94" y="84">（トリガー）</text>
+    <text x="94" y="234">（計算する）</text>
+    <text x="94" y="384">（DOMに書く）</text>
+    <text x="290" y="66">「選ぶ」を押す</text>
+    <text x="560" y="66">setSelectedId で state を替える</text>
+    <text x="440" y="176">Reactが、コンポーネントの関数を呼び直す</text>
+    <text x="440" y="256">返ってきたJSXを、前回のものと見比べる</text>
+    <text x="440" y="366">違っていたところだけ、DOMに書く</text>
+    <text x="440" y="481">画面を描き直す（レイアウト → ペイント）</text>
+    <text x="380" y="553">点線の矢印：次の操作を待って、最初に戻る</text>
+  </g>
+</svg>
+
+<p className="caption">図：Reactの1回の更新。0-3の「全体を1枚の図で見ると？」と同じ並びで、言葉をReactのものに置き換えた。</p>
+
+「プロジェクター」の行の `SelectableRow` は呼ばれましたが、返したJSXを前回のものと見比べても、DOMに書くべき違いがありませんでした。だから、その行のDOMには何も書かれません。
+入力したメモは、state ではなく、DOMの入力欄が持っています（0-2・0-3で見たとおりです）。入力欄が同じ要素のままなので、メモが残ります。
+DOMに書かれたのは、「リーダブルコード」の行の `class` と、「選択中」の文字だけです。
+
+レンダーは、「いまの state なら、画面はこうなるはず」という計算です。DOMに何を書くかは、前回と見比べた結果で決まり、違いがなければ何も書かれません。
+
+もう1つ、決まりがあります。コンポーネントの関数は、自分のコードから `SelectableRow(...)` のように直接は呼びません。JSXに `<SelectableRow />` と書いておき、呼ぶのはReactに任せます。
+Reactは、`useState` で預かった値を、「レンダーツリーのどの位置のコンポーネントのものか」で覚えています。自分で呼んだ関数は、ツリーの中に位置を持たないので、state を正しく覚えてもらえません。この仕組みは、発展編で自分の手で確かめます。
+
+</Reveal>
+
+## 今日の要点
+
+<Question>
+レビューの問いです。一覧の表に「置き場所」の列を1つ足すことになったら、部品に分けた版では、どのファイルを直すことになるでしょうか。
+</Question>
+
+<Reveal label="答えと要点を見る">
+
+直すのは、データの形を決めている `items.ts`、見出しを持つ `ItemList.tsx`、セルを並べている `ItemRow.tsx` です。`CategoryBadge.tsx`・`StatusCells.tsx`・`LentItems.tsx` は、開く必要がありません。
+「どのファイルを開かなくてよいか」がすぐに言えることが、分けた効果です。
+
+- コンポーネントは、props を受け取って、画面の一部（JSX）を返す関数。
+- 分ける基準は、変わる理由。一緒に変わるものを、同じ場所に書く。
+- データは、props で親から子へ渡る。
+- 親が再レンダーされると、子も再レンダーされる。ただし、再レンダーされても、DOMが書き換えられるとは限らない。
+
+</Reveal>
+
+## よくある誤解
+
+<Misconception wrong="再レンダーは、DOMを作り直すことだ。だから、できるだけ避けるべきだ。">
+
+再レンダーは、コンポーネントの関数を呼んで、前回と見比べる計算です。DOMに書かれるのは、違っていたところだけです。ふつうの画面では、この計算は十分に速く、最初から避けようとする必要はありません。遅さが実際に問題になったときの調べ方と直し方は、第7回で扱います。
+
+</Misconception>
+
+<Misconception wrong="コンポーネントは、コードを短くするために分ける。">
+
+分ける基準は、長さではなく、変わる理由です。短くても、別々の理由で変わるものが混ざっていれば、直す場所を探すことになります。長くても、一緒に変わるものだけなら、1つのままでかまいません。
+
+</Misconception>
+
+<Misconception wrong="コンポーネントはただの関数だから、ItemRow(props) のように自分で呼んでもよい。">
+
+自分で呼ぶと、Reactはそれをレンダーツリーの中のコンポーネントとして扱えず、state を正しく覚えられません。`<ItemRow />` と書いて、呼ぶのはReactに任せます。
+
+</Misconception>
+
+## 公式ドキュメント
+
+今日の内容のあとで読むと、理由がつながるページです。
+
+- <DocLink href="https://ja.react.dev/learn/your-first-component">react.dev：初めてのコンポーネント</DocLink>（コンポーネントの定義と、名前を大文字で始める決まり）
+- <DocLink href="https://ja.react.dev/learn/importing-and-exporting-components">react.dev：コンポーネントのインポートとエクスポート</DocLink>（今日の `import { ItemRow } from './ItemRow'` の書き方）
+- <DocLink href="https://ja.react.dev/learn/passing-props-to-a-component">react.dev：コンポーネントに props を渡す</DocLink>（「コンポーネントに props を渡す」の節が、今日の `CategoryBadge`）
+- <DocLink href="https://ja.react.dev/learn/conditional-rendering">react.dev：条件付きレンダー</DocLink>（`if`・`? :`・`&&`・`null` を返す、の使い分け）
+- <DocLink href="https://ja.react.dev/learn/understanding-your-ui-as-a-tree">react.dev：UI をツリーとして理解する</DocLink>（「レンダーツリー」の節が、今日の図）
+- <DocLink href="https://ja.react.dev/learn/render-and-commit">react.dev：レンダーとコミット</DocLink>（ステップ1〜3が、今日の図の上から3段）
+- <DocLink href="https://ja.react.dev/learn/thinking-in-react">react.dev：React の流儀</DocLink>（「ステップ 1：UI をコンポーネントの階層に分割する」が、今日の分け方。ステップ3以降は次回）
+- <DocLink href="https://ja.react.dev/reference/rules/react-calls-components-and-hooks">react.dev：コンポーネントやフックを呼び出すのは React</DocLink>（「コンポーネント関数を直接呼び出さない」の節）
+- <DocLink href="https://ja.react.dev/reference/react/Fragment">react.dev：Fragment</DocLink>（`<>…</>` の説明）
+
+## 今日の一文
+
+今日わかったことを、自分の言葉で1文にしてください。書けたら、例と見比べます。
+
+<Reveal label="例を見る">
+
+コンポーネントは、変わる理由ごとに分けた、props から画面の一部を返す関数である。再レンダーされても、DOMが書き換えられるとは限らない。
+
+</Reveal>
+
+## 次回の仕様変更予告
+
+田中さんから、次の依頼が来ます。
+「備品が増えてきたので、名前で検索できるようにしてください。種類でも絞り込みたいです。それと、絞り込んだ結果が何件あるかも出してください。」
+
+<Question>
+検索欄に入力された文字は、state として持つことになります。
+では、「絞り込んだあとの一覧」や「その件数」も、state として持つべきでしょうか。持つとしたら、どのコンポーネントが持つのでしょうか。
+</Question>

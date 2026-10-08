@@ -62,6 +62,17 @@ test('changedFrom を渡したファイルは、タブと説明で「前の段�
   await expect.element(screen.getByText(/から変わった行です/)).toBeVisible();
 });
 
+test('例の console.log は、コンソール欄に出る', async () => {
+  const logging: SandboxSpec = {
+    files: [{ name: 'main.ts', code: "export function start(root: HTMLElement) { console.log('動いた', 1); root.append('表示'); }" }],
+    entry: 'main.ts',
+    start: 'start',
+  };
+  const screen = await render(<Sandbox spec={logging} />);
+
+  await expect.element(screen.getByRole('region', { name: 'コンソール' }).getByText('動いた 1')).toBeVisible();
+});
+
 test('codeClosed を付けると、コードは「コードを見る」を押すまで出ない', async () => {
   const screen = await render(<Sandbox spec={spec} codeClosed />);
 
