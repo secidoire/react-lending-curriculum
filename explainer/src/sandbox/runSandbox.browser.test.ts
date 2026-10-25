@@ -3,6 +3,11 @@ import { page } from 'vitest/browser';
 import { runSandbox, startSandbox } from './runSandbox';
 
 describe('runSandbox', () => {
+  it.each(['constructor', 'toString', '__proto__'])('rejects inherited library name %s', (specifier) => {
+    const files = [{ name: 'main.ts', code: `import * as value from '${specifier}'; export const result = value;` }];
+    expect(() => runSandbox(files, 'main.ts')).toThrow(specifier);
+  });
+
   it('TypeScriptの型注釈を取り除いて実行し、export を返す', () => {
     const exported = runSandbox(
       [{ name: 'main.ts', code: 'export function double(value: number): number { return value * 2; }' }],

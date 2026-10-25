@@ -53,7 +53,7 @@ export function runSandbox(
   const loaded = new Map<string, Module>();
 
   function require(specifier: string): unknown {
-    if (specifier in LIBRARIES) return LIBRARIES[specifier];
+    if (Object.hasOwn(LIBRARIES, specifier)) return LIBRARIES[specifier];
 
     const name = moduleName(specifier);
     const alreadyLoaded = loaded.get(name);

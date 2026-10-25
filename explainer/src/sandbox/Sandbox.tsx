@@ -65,6 +65,12 @@ export function Sandbox({ spec, codeClosed = false }: Props) {
         </p>
       )}
 
+      {codeOpen && (
+        <p className="sandbox-legend">
+          編集したコードは、このページと同じ権限で自動実行されます。自分で内容を確かめたコードだけを入力し、秘密情報は入力しないでください。
+        </p>
+      )}
+
       <div className="sandbox-panes">
         {codeOpen && activeFile !== undefined && (
           <CodeEditor

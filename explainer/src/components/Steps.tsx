@@ -1,6 +1,6 @@
 import { Children, useEffect, useRef, useState, type ReactNode } from 'react';
 import { usePresentMode } from './PresentModeContext';
-import { isStep, isTypingTarget, nextVisibleCount } from './steps';
+import { isStep, isTypingTarget, nextVisibleCount } from './stepLogic';
 
 type Props = { children: ReactNode };
 
